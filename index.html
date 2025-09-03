@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEL MONTE - Pizzaria</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #e74c3c;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .cart-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            position: relative;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        .cart-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+        }
+
+        .cart-count {
+            background: #fff;
+            color: #e74c3c;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 0.8rem;
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        /* Navigation */
+        .nav {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: 2px solid #e74c3c;
+            color: #e74c3c;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            background: #e74c3c;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        /* Main Content */
+        .main-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .category-title {
+            text-align: center;
+            font-size: 2.5rem;
+            color: #e74c3c;
+            margin-bottom: 2rem;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+            border-color: #e74c3c;
+        }
+
+        .product-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(45deg, #ff6b6b, #ffa500);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .product-info {
+            padding: 1.5rem;
+        }
+
+        .product-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .product-description {
+            color: #666;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .product-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .qty-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qty-input {
+            width: 50px;
+            text-align: center;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            padding: 5px;
+        }
+
+        .product-price {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+
+        .add-to-cart {
+            width: 100%;
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .add-to-cart:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 20px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .cart-item-info {
+            flex: 1;
+        }
+
+        .cart-item-name {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .cart-item-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .remove-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .cart-total {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .checkout-btn {
+            width: 100%;
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-top: 1rem;
+        }
+
+        .empty-cart {
+            text-align: center;
+            color: #666;
+            font-size: 1.2rem;
+            padding: 2rem;
+        }
+
+        /* Payment Modal */
+        .payment-modal {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .payment-modal h2 {
+            color: #e74c3c;
+            margin-bottom: 1.5rem;
+        }
+
+        .qr-code-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin: 1.5rem 0;
+        }
+
+        .qr-code-container img {
+            max-width: 250px;
+            margin: 1rem 0;
+        }
+
+        .pix-code {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        .copy-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .copy-btn:hover {
+            background: #0056b3;
+        }
+
+        .payment-status {
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+        }
+
+        .payment-status.waiting {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .payment-status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .payment-status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Loading */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #e74c3c;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 15px;
+            }
+
+            .logo {
+                font-size: 2rem;
+            }
+
+            .products-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .main-content {
+                padding: 1.5rem;
+            }
+
+            .modal-content {
+                margin: 10% 20px;
+                padding: 1.5rem;
+            }
+
+            .nav-buttons {
+                gap: 0.5rem;
+            }
+
+            .nav-btn {
+                padding: 8px 16px;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Hidden sections */
+        .category-section {
+            display: none;
+        }
+
+        .category-section.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">🍕 DEL MONTE</div>
+                <button class="cart-btn" onclick="openCart()">
+                    🛒 Carrinho
+                    <span class="cart-count" id="cartCount">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="container">
+            <div class="nav-buttons">
+                <button class="nav-btn active" onclick="showCategory('pizza')">🍕 PIZZA</button>
+                <button class="nav-btn" onclick="showCategory('calzone')">🥟 CALZONE</button>
+                <button class="nav-btn" onclick="showCategory('bebidas')">🥤 BEBIDAS</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <main class="main-content">
+            <!-- Pizza Section -->
+            <section id="pizza" class="category-section active">
+                <h2 class="category-title">Nossas Pizzas</h2>
+                <div class="products-grid">
+                    <div class="product-card">
+                        <div class="product-image">🍕</div>
+                        <div class="product-info">
+                            <h3 class="product-name">Pizza Margherita</h3>
+                            <p class="product-description">Molho de tomate, mussarela, manjericão fresco e azeite</p>
+                            <div class="product-controls">
+                                <div class="quantity-control">
+                                    <button class="qty-btn" onclick="changeQuantity(this, -1)">-</button>
+                                    <input type="number" class="qty-input" value="1" min="1">
+                                    <button class="qty-btn" onclick="changeQuantity(this, 1)">+</button>
+                                </div>
+                                <span class="product-price">R$ 35,00</span>
+                            </div>
+                            <button class="add-to-cart" onclick="addToCart('Pizza Margherita', 35.00, this)">
+                                Adicionar ao Carrinho
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="product-card">
+                        <div class="product-image">🍕</div>
+                        <div class="product-info">
+                            <h3 class="product-name">Pizza Pepperoni</h3>
+                            <p class="product-description">Molho de tomate, mussarela e pepperoni</p>
+                            <div class="product-controls">
+                                <div class="quantity-control">
+                                    <button class="qty-btn" onclick="changeQuantity(this, -1)">-</button>
+                                    <input type="number" class="qty-input" value="1" min="1">
+                                    <button class="qty-btn" onclick="changeQuantity(this, 1)">+</button>
+                                </div>
+                                <span class="product-price">R$ 42,00</span>
+                            </div>
+                            <button class="add-to-cart" onclick="addToCart('Pizza Pepperoni', 42.00, this)">
+                                Adicionar ao Carrinho
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="product-card">
+                        <div class="product-image">🍕</div>
+                        <div class="product-info">
+                            <h3 class="product-name">Pizza Quatro Queijos</h3>
+                            <p class="product-description">Mussarela, gorgonzola, parmesão e provolone</p>
+                            <div class="product-controls">
+                                <div class="quantity-control">
+                                    <button class="qty-btn" onclick="changeQuantity(this, -1)">-</button>
+                                    <input type="number" class="qty-input" value="1" min="1">
+                                    <button class="qty-btn" onclick="changeQuantity(this, 1)">+</button>
+                                </div>
+                                <span class="product-price">R$ 45,00</span>
+                            </div>
+                            <button class="add-to-cart" onclick="addToCart('Pizza Quatro Queijos', 45.00, this)">
+                                Adicionar ao Carrinho
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Calzone Section -->
+            <section id="calzone" class="category-section">
+                <h2 class="category-title">Calzones</h2>
+                <div class="products-grid">
+                    <div class="product-card">
+                        <div class="product-image">🥟</div>
+                        <div class="product-info">
+                            <h3 class="product-name">Calzone Tradicional</h3>
+                            <p class="product-description">Presunto, mussarela, tomate e orégano</p>
+                            <div class="product-controls">
+                                <div class="quantity-control">
+                                    <button class="qty-btn" onclick="changeQuantity(this, -1)">-</button>
+                                    <input type="number" class="qty-input" value="1" min="1">
+                                    <button class="qty-btn" onclick="changeQuantity(this, 1)">+</button>
+                                </div>
+                                <span class="product-price">R$ 28,00</span>
+                            </div>
+                            <button class="add-to-cart" onclick="addToCart('Calzone Tradicional', 28.00, this)">
+                                Adicionar ao Carrinho
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="product-card">
+                        <div class="product-image">🥟</div>
+                        <div class="product-info">
+                            <h3 class="product-name">Calzone Frango</h3>
+                            <p class="product-description">Frango desfiado, mussarela, catupiry e milho</p>
+                            <div class="product-controls">
+                                <div class="quantity-control">
+                                    <button class="qty-btn" onclick="changeQuantity(this, -1)">-</button>
+                                    <input type="number" class="qty-input" value="1" min="1">
+                                    <button class="qty-btn" onclick="changeQuantity(this, 1)">+</button>
+                                </div>
+                                <span class="product-price">R$ 32,00</span>
+                            </div>
+                            <button class="add-to-cart" onclick="addToCart('Calzone Frango', 32.00, this)">
+                                Adicionar ao Carrinho
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Bebidas Section -->
+            <section id="bebidas" class="category-section">
+                <h2 class="category-title">Bebidas</h2>
+                <div class="products-grid">
+                    <div class="product-card">
+                        <div class="product-image">🥤</div>
+                        <div class="product-info">
+                            <h3 class="product-name">Refrigerante Lata</h3>
+                            <p class="product-description">Coca-Cola, Guaraná, Fanta ou Sprite - 350ml</p>
+                            <div class="product-controls">
+                                <div class="quantity-control">
+                                    <button class="qty-btn" onclick="changeQuantity(this, -1)">-</button>
+                                    <input type="number" class="qty-input" value="1" min="1">
+                                    <button class="qty-btn" onclick="changeQuantity(this, 1)">+</button>
+                                </div>
+                                <span class="product-price">R$ 5,00</span>
+                            </div>
+                            <button class="add-to-cart" onclick="addToCart('Refrigerante Lata', 5.00, this)">
+                                Adicionar ao Carrinho
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="product-card">
+                        <div class="product-image">🧃</div>
+                        <div class="product-info">
+                            <h3 class="product-name">Suco Natural</h3>
+                            <p class="product-description">Laranja, Limão, Maracujá ou Acerola - 500ml</p>
+                            <div class="product-controls">
+                                <div class="quantity-control">
+                                    <button class="qty-btn" onclick="changeQuantity(this, -1)">-</button>
+                                    <input type="number" class="qty-input" value="1" min="1">
+                                    <button class="qty-btn" onclick="changeQuantity(this, 1)">+</button>
+                                </div>
+                                <span class="product-price">R$ 8,00</span>
+                            </div>
+                            <button class="add-to-cart" onclick="addToCart('Suco Natural', 8.00, this)">
+                                Adicionar ao Carrinho
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Cart Modal -->
+    <div id="cartModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeCart()">&times;</button>
+            <h2>Seu Carrinho</h2>
+            <div id="cartItems"></div>
+            <div class="cart-total" id="cartTotal">Total: R$ 0,00</div>
+            <button class="checkout-btn" onclick="checkout()">Finalizar Compra com PIX</button>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div id="paymentModal" class="modal">
+        <div class="modal-content payment-modal">
+            <button class="close-btn" onclick="closePayment()">&times;</button>
+            <h2>Pagamento via PIX</h2>
+            
+            <div class="payment-status waiting" id="paymentStatus">
+                ⏳ Aguardando pagamento...
+            </div>
+
+            <div class="qr-code-container">
+                <p><strong>Escaneie o QR Code com seu app bancário:</strong></p>
+                <canvas id="qrCodeCanvas"></canvas>
+                
+                <p style="margin-top: 1rem;"><strong>Ou copie o código PIX:</strong></p>
+                <div class="pix-code" id="pixCode">Carregando...</div>
+                <button class="copy-btn" onclick="copyPixCode()">📋 Copiar Código PIX</button>
+            </div>
+
+            <div style="margin-top: 1rem;">
+                <small>⏱️ Este QR Code expira em 30 minutos</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <script>
+        let cart = [];
+        let cartCount = 0;
+        let currentOrderId = null;
+        let paymentCheckInterval = null;
+
+        function showCategory(category) {
+            // Hide all sections
+            document.querySelectorAll('.category-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(category).classList.add('active');
+            
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        function changeQuantity(button, change) {
+            const input = button.parentElement.querySelector('.qty-input');
+            let newValue = parseInt(input.value) + change;
+            if (newValue < 1) newValue = 1;
+            input.value = newValue;
+        }
+
+        function addToCart(name, price, button) {
+            const card = button.closest('.product-card');
+            const quantity = parseInt(card.querySelector('.qty-input').value);
+            
+            // Check if item already exists in cart
+            const existingItem = cart.find(item => item.name === name);
+            
+            if (existingItem) {
+                existingItem.quantity += quantity;
+            } else {
+                cart.push({
+                    name: name,
+                    price: price,
+                    quantity: quantity
+                });
+            }
+            
+            updateCartCount();
+            showAddedMessage(button);
+            
+            // Reset quantity to 1
+            card.querySelector('.qty-input').value = 1;
+        }
+
+        function showAddedMessage(button) {
+            const originalText = button.textContent;
+            button.textContent = '✓ Adicionado!';
+            button.style.background = '#28a745';
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = '';
+            }, 1500);
+        }
+
+        function updateCartCount() {
+            cartCount = cart.reduce((total, item) => total + item.quantity, 0);
+            document.getElementById('cartCount').textContent = cartCount;
+        }
+
+        function openCart() {
+            renderCartItems();
+            document.getElementById('cartModal').style.display = 'block';
+        }
+
+        function closeCart() {
+            document.getElementById('cartModal').style.display = 'none';
+        }
+
+        function closePayment() {
+            document.getElementById('paymentModal').style.display = 'none';
+            if (paymentCheckInterval) {
+                clearInterval(paymentCheckInterval);
+            }
+        }
+
+        function renderCartItems() {
+            const cartItemsContainer = document.getElementById('cartItems');
+            const cartTotal = document.getElementById('cartTotal');
+            
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = '<div class="empty-cart">Seu carrinho está vazio</div>';
+                cartTotal.textContent = 'Total: R$ 0,00';
+                return;
+            }
+            
+            let total = 0;
+            cartItemsContainer.innerHTML = '';
+            
+            cart.forEach((item, index) => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+                
+                const cartItem = document.createElement('div');
+                cartItem.className = 'cart-item';
+                cartItem.innerHTML = `
+                    <div class="cart-item-info">
+                        <div class="cart-item-name">${item.name}</div>
+                        <div>R$ ${item.price.toFixed(2)} x ${item.quantity} = R$ ${itemTotal.toFixed(2)}</div>
+                    </div>
+                    <div class="cart-item-controls">
+                        <button class="qty-btn" onclick="updateCartItemQuantity(${index}, -1)">-</button>
+                        <span>${item.quantity}</span>
+                        <button class="qty-btn" onclick="updateCartItemQuantity(${index}, 1)">+</button>
+                        <button class="remove-btn" onclick="removeCartItem(${index})">Remover</button>
+                    </div>
+                `;
+                cartItemsContainer.appendChild(cartItem);
+            });
+            
+            cartTotal.textContent = `Total: R$ ${total.toFixed(2)}`;
+        }
+
+        function updateCartItemQuantity(index, change) {
+            cart[index].quantity += change;
+            if (cart[index].quantity <= 0) {
+                cart.splice(index, 1);
+            }
+            updateCartCount();
+            renderCartItems();
+        }
+
+        function removeCartItem(index) {
+            cart.splice(index, 1);
+            updateCartCount();
+            renderCartItems();
+        }
+
+        // Substitua a função checkout existente no index.html por esta:
+
+async function checkout() {
+    if (cart.length === 0) {
+        alert('Seu carrinho está vazio!');
+        return;
+    }
+
+    // Converte dados do carrinho para o formato da API
+    const orderData = {
+        items: cart.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            unit_amount: Math.round(item.price * 100) // Convert to cents
+        })),
+        total_amount: Math.round(cart.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 100),
+        reference_id: 'DELMONTE_' + Date.now()
+    };
+
+    // Salva os dados do pedido no localStorage
+    localStorage.setItem('currentOrder', JSON.stringify(orderData));
+
+    // Redireciona para a página de pagamento
+    window.location.href = 'pagamento.html';
+}
+
+        function copyPixCode() {
+            const pixCode = document.getElementById('pixCode').textContent;
+            navigator.clipboard.writeText(pixCode).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✓ Copiado!';
+                btn.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '';
+                }, 2000);
+            });
+        }
+
+        async function startPaymentCheck(orderId) {
+            // Check payment status every 5 seconds
+            paymentCheckInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`http://localhost:5000/status-pedido/${orderId}`);
+                    const data = await response.json();
+                    
+                    console.log("Status do pagamento:", data.status);
+                    
+                    if (data.status === 'PAID') {
+                        // Payment successful
+                        document.getElementById('paymentStatus').className = 'payment-status success';
+                        document.getElementById('paymentStatus').innerHTML = '✅ Pagamento confirmado! Seu pedido está sendo preparado.';
+                        
+                        clearInterval(paymentCheckInterval);
+                        
+                        setTimeout(() => {
+                            closePayment();
+                            alert('Pagamento confirmado! Seu pedido está sendo preparado. 🍕');
+                        }, 3000);
+                    } else if (data.status === 'DECLINED' || data.status === 'CANCELED') {
+                        // Payment failed
+                        document.getElementById('paymentStatus').className = 'payment-status error';
+                        document.getElementById('paymentStatus').innerHTML = '❌ Pagamento não foi processado. Tente novamente.';
+                        
+                        clearInterval(paymentCheckInterval);
+                    }
+                } catch (err) {
+                    console.error("Erro ao verificar status:", err);
+                }
+            }, 5000);
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                if (event.target.id === 'cartModal') {
+                    closeCart();
+                } else if (event.target.id === 'paymentModal') {
+                    closePayment();
+                }
+            }
+        }
+    </script>
+</body>
+</html>

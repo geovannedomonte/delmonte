@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagamento - DEL MONTE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .payment-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #e74c3c;
+            margin-bottom: 1rem;
+        }
+
+        .back-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-bottom: 1rem;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .order-summary {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+        }
+
+        .order-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: #e74c3c;
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .order-total {
+            font-size: 1.3rem;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 2px solid #e74c3c;
+            color: #e74c3c;
+        }
+
+        .payment-methods {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .payment-method {
+            border: 2px solid #ddd;
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .payment-method:hover {
+            border-color: #e74c3c;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.2);
+        }
+
+        .payment-method.selected {
+            border-color: #e74c3c;
+            background: #fff5f5;
+        }
+
+        .payment-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .payment-name {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .payment-description {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .payment-form {
+            display: none;
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-top: 2rem;
+            border: 2px solid #e74c3c;
+        }
+
+        .payment-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #e74c3c;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .installments-select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: white;
+        }
+
+        .pay-button {
+            width: 100%;
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-top: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .pay-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+        }
+
+        .pay-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #e74c3c;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+            text-align: center;
+            display: none;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+            text-align: center;
+            display: none;
+        }
+
+        /* PIX QR Code */
+        .qr-container {
+            text-align: center;
+            padding: 2rem;
+            background: #f8f9fa;
+            border-radius: 15px;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .qr-container.active {
+            display: block;
+        }
+
+        .qr-code {
+            margin: 1rem 0;
+        }
+
+        .pix-code {
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 0.9rem;
+            border: 1px solid #ddd;
+        }
+
+        .copy-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .copy-btn:hover {
+            background: #0056b3;
+        }
+
+        @media (max-width: 768px) {
+            .payment-container {
+                padding: 1.5rem;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .payment-methods {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="payment-container">
+            <div class="header">
+                <a href="index.html" class="back-btn">← Voltar ao Carrinho</a>
+                <div class="logo">🍕 DEL MONTE</div>
+                <h1>Finalizar Pagamento</h1>
+            </div>
+
+            <!-- Resumo do Pedido -->
+            <div class="order-summary">
+                <div class="order-title">Resumo do Pedido</div>
+                <div id="orderItems"></div>
+                <div class="order-total" id="orderTotal">Total: R$ 0,00</div>
+            </div>
+
+            <!-- Métodos de Pagamento -->
+            <div class="payment-methods">
+                <div class="payment-method" onclick="selectPaymentMethod('pix')">
+                    <div class="payment-icon">📱</div>
+                    <div class="payment-name">PIX</div>
+                    <div class="payment-description">Pagamento instantâneo</div>
+                </div>
+                
+                <div class="payment-method" onclick="selectPaymentMethod('debit')">
+                    <div class="payment-icon">💳</div>
+                    <div class="payment-name">Cartão de Débito</div>
+                    <div class="payment-description">À vista</div>
+                </div>
+                
+                <div class="payment-method" onclick="selectPaymentMethod('credit')">
+                    <div class="payment-icon">💎</div>
+                    <div class="payment-name">Cartão de Crédito</div>
+                    <div class="payment-description">À vista ou parcelado</div>
+                </div>
+            </div>
+
+            <!-- Formulário PIX -->
+            <div id="pixForm" class="payment-form">
+                <h3>Dados para PIX</h3>
+                <div class="form-group">
+                    <label class="form-label">Nome Completo</label>
+                    <input type="text" class="form-input" id="pixName" placeholder="Seu nome completo">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="pixEmail" placeholder="seu@email.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">CPF (apenas números)</label>
+                    <input type="text" class="form-input" id="pixCpf" placeholder="12345678901" maxlength="11">
+                </div>
+                <button class="pay-button" onclick="processPayment('pix')">
+                    Gerar QR Code PIX
+                </button>
+            </div>
+
+            <!-- Formulário Cartão -->
+            <div id="cardForm" class="payment-form">
+                <h3>Dados do Cartão</h3>
+                <div class="form-group">
+                    <label class="form-label">Nome no Cartão</label>
+                    <input type="text" class="form-input" id="cardHolder" placeholder="Nome como está no cartão">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Número do Cartão</label>
+                    <input type="text" class="form-input" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Validade</label>
+                        <input type="text" class="form-input" id="cardExpiry" placeholder="MM/AA" maxlength="5">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">CVV</label>
+                        <input type="text" class="form-input" id="cardCvv" placeholder="123" maxlength="4">
+                    </div>
+                </div>
+                
+                <div class="form-group" id="installmentsGroup" style="display: none;">
+                    <label class="form-label">Parcelamento</label>
+                    <select class="installments-select" id="installments">
+                        <option value="1">À vista</option>
+                        <option value="2">2x sem juros</option>
+                        <option value="3">3x sem juros</option>
+                        <option value="4">4x sem juros</option>
+                        <option value="5">5x sem juros</option>
+                        <option value="6">6x sem juros</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Nome Completo</label>
+                    <input type="text" class="form-input" id="cardCustomerName" placeholder="Seu nome completo">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="cardEmail" placeholder="seu@email.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">CPF (apenas números)</label>
+                    <input type="text" class="form-input" id="cardCpf" placeholder="12345678901" maxlength="11">
+                </div>
+
+                <button class="pay-button" onclick="processPayment('card')" id="cardPayButton">
+                    Finalizar Pagamento
+                </button>
+            </div>
+
+            <!-- QR Code PIX -->
+            <div id="qrContainer" class="qr-container">
+                <h3>Escaneie o QR Code</h3>
+                <div class="qr-code">
+                    <canvas id="qrCodeCanvas" width="250" height="250"></canvas>
+                </div>
+                <p><strong>Ou copie o código PIX:</strong></p>
+                <div class="pix-code" id="pixCodeText">Carregando...</div>
+                <button class="copy-btn" onclick="copyPixCode()">📋 Copiar Código PIX</button>
+                <p style="margin-top: 1rem;"><small>⏱️ Este código expira em 30 minutos</small></p>
+            </div>
+
+            <div id="successMessage" class="success-message"></div>
+            <div id="errorMessage" class="error-message"></div>
+        </div>
+    </div>
+
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <script>
+        let selectedPaymentMethod = null;
+        let orderData = null;
+        let paymentCheckInterval = null;
+
+        // Carrega dados do pedido do localStorage
+        window.onload = function() {
+            const storedOrder = localStorage.getItem('currentOrder');
+            if (storedOrder) {
+                orderData = JSON.parse(storedOrder);
+                displayOrderSummary();
+            } else {
+                alert('Nenhum pedido encontrado. Redirecionando para o carrinho...');
+                window.location.href = 'index.html';
+            }
+        };
+
+        function displayOrderSummary() {
+            const itemsContainer = document.getElementById('orderItems');
+            const totalContainer = document.getElementById('orderTotal');
+            
+            let html = '';
+            let total = 0;
+            
+            orderData.items.forEach(item => {
+                const itemTotal = (item.unit_amount / 100) * item.quantity;
+                total += itemTotal;
+                html += `
+                    <div class="order-item">
+                        <span>${item.name} x ${item.quantity}</span>
+                        <span>R$ ${itemTotal.toFixed(2)}</span>
+                    </div>
+                `;
+            });
+            
+            itemsContainer.innerHTML = html;
+            totalContainer.textContent = `Total: R$ ${total.toFixed(2)}`;
+        }
+
+        function selectPaymentMethod(method) {
+            // Remove seleção anterior
+            document.querySelectorAll('.payment-method').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            // Oculta todos os formulários
+            document.querySelectorAll('.payment-form').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Seleciona novo método
+            event.target.closest('.payment-method').classList.add('selected');
+            selectedPaymentMethod = method;
+            
+            if (method === 'pix') {
+                document.getElementById('pixForm').classList.add('active');
+            } else if (method === 'debit' || method === 'credit') {
+                document.getElementById('cardForm').classList.add('active');
+                
+                // Mostra/oculta parcelamento baseado no método
+                const installmentsGroup = document.getElementById('installmentsGroup');
+                const payButton = document.getElementById('cardPayButton');
+                
+                if (method === 'credit') {
+                    installmentsGroup.style.display = 'block';
+                    payButton.textContent = 'Finalizar Pagamento no Crédito';
+                } else {
+                    installmentsGroup.style.display = 'none';
+                    payButton.textContent = 'Finalizar Pagamento no Débito';
+                }
+            }
+        }
+
+        async function processPayment(method) {
+            if (method === 'pix') {
+                await processPixPayment();
+            } else {
+                await processCardPayment();
+            }
+        }
+
+        async function processPixPayment() {
+            const name = document.getElementById('pixName').value;
+            const email = document.getElementById('pixEmail').value;
+            const cpf = document.getElementById('pixCpf').value;
+            
+            if (!name || !email || !cpf) {
+                showError('Por favor, preencha todos os campos');
+                return;
+            }
+            
+            if (cpf.length !== 11) {
+                showError('CPF deve ter 11 dígitos');
+                return;
+            }
+            
+            const button = event.target;
+            const originalText = button.textContent;
+            button.innerHTML = 'Processando... <span class="loading"></span>';
+            button.disabled = true;
+            
+            try {
+                const response = await fetch('http://localhost:5000/criar-pedido', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ...orderData,
+                        customer: {
+                            name: name,
+                            email: email,
+                            tax_id: cpf
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.sucesso && data.qr_code) {
+                    // Exibe QR Code
+                    document.getElementById('qrContainer').classList.add('active');
+                    
+                    // Gera QR Code
+                    const canvas = document.getElementById('qrCodeCanvas');
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, 250, 250);
+                    
+                    const qr = new QRCode(document.createElement('div'), {
+                        text: data.qr_code.qr_code_text,
+                        width: 250,
+                        height: 250
+                    });
+                    
+                    setTimeout(() => {
+                        const img = qr._el.querySelector('img');
+                        if (img) {
+                            ctx.drawImage(img, 0, 0, 250, 250);
+                        }
+                    }, 100);
+                    
+                    // Exibe código PIX
+                    document.getElementById('pixCodeText').textContent = data.qr_code.qr_code_text;
+                    
+                    // Inicia verificação de pagamento
+                    startPaymentCheck(data.order_id);
+                    
+                    showSuccess('QR Code gerado! Escaneie para pagar ou copie o código PIX.');
+                } else {
+                    showError(data.erro || 'Erro ao gerar PIX');
+                }
+            } catch (error) {
+                showError('Erro de conexão: ' + error.message);
+            } finally {
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        }
+
+        async function processCardPayment() {
+            const holder = document.getElementById('cardHolder').value;
+            const number = document.getElementById('cardNumber').value.replace(/\s/g, '');
+            const expiry = document.getElementById('cardExpiry').value;
+            const cvv = document.getElementById('cardCvv').value;
+            const customerName = document.getElementById('cardCustomerName').value;
+            const email = document.getElementById('cardEmail').value;
+            const cpf = document.getElementById('cardCpf').value;
+            
+            if (!holder || !number || !expiry || !cvv || !customerName || !email || !cpf) {
+                showError('Por favor, preencha todos os campos');
+                return;
+            }
+            
+            if (cpf.length !== 11) {
+                showError('CPF deve ter 11 dígitos');
+                return;
+            }
+            
+            // Valida formato do cartão
+            if (number.length < 13 || number.length > 19) {
+                showError('Número do cartão inválido');
+                return;
+            }
+            
+            const [expMonth, expYear] = expiry.split('/');
+            if (!expMonth || !expYear || expMonth.length !== 2 || expYear.length !== 2) {
+                showError('Data de validade inválida (MM/AA)');
+                return;
+            }
+            
+            const button = event.target;
+            const originalText = button.textContent;
+            button.innerHTML = 'Processando... <span class="loading"></span>';
+            button.disabled = true;
+            
+            try {
+                const installments = selectedPaymentMethod === 'credit' ? 
+                    parseInt(document.getElementById('installments').value) : 1;
+                
+                const paymentData = {
+                    ...orderData,
+                    customer: {
+                        name: customerName,
+                        email: email,
+                        tax_id: cpf
+                    },
+                    card_data: {
+                        holder: holder,
+                        number: number,
+                        exp_month: expMonth,
+                        exp_year: '20' + expYear,
+                        security_code: cvv
+                    },
+                    payment_type: selectedPaymentMethod,
+                    installments: installments
+                };
+                
+                const response = await fetch('http://localhost:5000/criar-pedido-cartao', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(paymentData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.sucesso) {
+                    showSuccess('Pagamento aprovado! Redirecionando...');
+                    
+                    // Limpa dados do localStorage
+                    localStorage.removeItem('currentOrder');
+                    
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 3000);
+                } else {
+                    showError(data.erro || 'Pagamento recusado');
+                }
+            } catch (error) {
+                showError('Erro de conexão: ' + error.message);
+            } finally {
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        }
+
+        function copyPixCode() {
+            const pixCode = document.getElementById('pixCodeText').textContent;
+            navigator.clipboard.writeText(pixCode).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✓ Copiado!';
+                btn.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '';
+                }, 2000);
+            });
+        }
+
+        async function startPaymentCheck(orderId) {
+            paymentCheckInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`http://localhost:5000/status-pedido/${orderId}`);
+                    const data = await response.json();
+                    
+                    if (data.status === 'PAID') {
+                        clearInterval(paymentCheckInterval);
+                        showSuccess('Pagamento confirmado! Redirecionando...');
+                        
+                        localStorage.removeItem('currentOrder');
+                        
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 3000);
+                    } else if (data.status === 'DECLINED' || data.status === 'CANCELED') {
+                        clearInterval(paymentCheckInterval);
+                        showError('Pagamento não foi processado');
+                    }
+                } catch (error) {
+                    console.error('Erro ao verificar status:', error);
+                }
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        // Formatação de campos
+        document.getElementById('cardNumber').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\s/g, '');
+            let formattedValue = value.replace(/(.{4})/g, '$1 ').trim();
+            if (formattedValue.length > 19) {
+                formattedValue = formattedValue.substr(0, 19);
+            }
+            e.target.value = formattedValue;
+        });
+
+        document.getElementById('cardExpiry').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length >= 2) {
+                value = value.substr(0, 2) + '/' + value.substr(2, 2);
+            }
+            e.target.value = value;
+        });
+
+        document.getElementById('cardCvv').addEventListener('input', function(e) {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+
+        // Formatação CPF
+        document.querySelectorAll('#pixCpf, #cardCpf').forEach(input => {
+            input.addEventListener('input', function(e) {
+                e.target.value = e.target.value.replace(/\D/g, '');
+            });
+        });
+    </script>
+</body>
+</html>
