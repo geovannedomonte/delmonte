@@ -251,7 +251,7 @@ def criar_pedido_cartao():
                         "authentication_method": {
                             "type": "THREEDS",
                             "id": f"auth_{int(datetime.now().timestamp())}"
-                        } if payment_type == "debit" else None,
+                        } if payment_type == "debit" else {},
                         "card": {
                             "number": card_data["number"],
                             "exp_month": card_data["exp_month"],
