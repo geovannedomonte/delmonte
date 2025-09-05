@@ -536,7 +536,7 @@
             button.disabled = true;
             
             try {
-                const response = await fetch('http://delmonte-pizzaria.onrender.com/criar-pedido', {
+                const response = await fetch('/criar-pedido', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -651,7 +651,7 @@
                     installments: installments
                 };
                 
-                const response = await fetch('http://delmonte-pizzaria.onrender.com/criar-pedido-cartao', {
+                const response = await fetch('/criar-pedido-cartao', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -699,7 +699,7 @@
         async function startPaymentCheck(orderId) {
             paymentCheckInterval = setInterval(async () => {
                 try {
-                    const response = await fetch(`http://delmonte-pizzaria.onrender.com/status-pedido/${orderId}`);
+                    const response = await fetch(`/status-pedido/${orderId}`);
                     const data = await response.json();
                     
                     if (data.status === 'PAID') {
