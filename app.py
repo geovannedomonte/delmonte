@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import requests
 import os
@@ -23,12 +23,47 @@ if PAGBANK_ENV == "sandbox":
 else:
     URL_API = "https://api.pagseguro.com/orders"
 
-@app.route("/", methods=["GET"])
-def home():
+# ROTAS PARA SERVIR ARQUIVOS HTML
+@app.route("/")
+def home_page():
+    """Serve a página inicial (index.html)"""
+    try:
+        return send_from_directory('.', 'index.html')
+    except:
+        return jsonify({
+            "status": "API PagBank DEL MONTE funcionando!",
+            "ambiente": PAGBANK_ENV,
+            "endpoints": [
+                "GET / - Página inicial",
+                "GET /index.html - Página inicial",
+                "GET /pagamento.html - Página de pagamento",
+                "POST /criar-pedido - Criar pedido PIX",
+                "POST /criar-pedido-cartao - Criar pedido com cartão",
+                "GET /status-pedido/<order_id> - Consultar status",
+                "POST /webhook-pagbank - Receber notificações"
+            ]
+        })
+
+@app.route("/index.html")
+def index_page():
+    """Serve a página inicial"""
+    return send_from_directory('.', 'index.html')
+
+@app.route("/pagamento.html")
+def pagamento_page():
+    """Serve a página de pagamento"""
+    return send_from_directory('.', 'pagamento.html')
+
+# ROTAS DA API
+@app.route("/api", methods=["GET"])
+def api_info():
     return jsonify({
         "status": "API PagBank DEL MONTE funcionando!",
         "ambiente": PAGBANK_ENV,
         "endpoints": [
+            "GET / - Página inicial",
+            "GET /index.html - Página inicial", 
+            "GET /pagamento.html - Página de pagamento",
             "POST /criar-pedido - Criar pedido PIX",
             "POST /criar-pedido-cartao - Criar pedido com cartão",
             "GET /status-pedido/<order_id> - Consultar status",
