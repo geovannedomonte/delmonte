@@ -651,7 +651,7 @@
             <h2>Seu Carrinho</h2>
             <div id="cartItems"></div>
             <div class="cart-total" id="cartTotal">Total: R$ 0,00</div>
-            <button class="checkout-btn" onclick="checkout()">Finalizar Compra com PIX</button>
+            <button class="checkout-btn" onclick="checkout()">Finalizar Compra</button>
         </div>
     </div>
 
@@ -865,7 +865,7 @@ async function checkout() {
             // Check payment status every 5 seconds
             paymentCheckInterval = setInterval(async () => {
                 try {
-                    const response = await fetch(`http://localhost:5000/status-pedido/${orderId}`);
+                    const response = await fetch(`/status-pedido/${orderId}`);
                     const data = await response.json();
                     
                     console.log("Status do pagamento:", data.status);
