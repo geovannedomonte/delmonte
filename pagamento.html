@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -223,8 +224,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .success-message {
@@ -294,17 +300,18 @@
             .payment-container {
                 padding: 1.5rem;
             }
-            
+
             .form-row {
                 grid-template-columns: 1fr;
             }
-            
+
             .payment-methods {
                 grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="payment-container">
@@ -328,13 +335,13 @@
                     <div class="payment-name">PIX</div>
                     <div class="payment-description">Pagamento instantâneo</div>
                 </div>
-                
+
                 <div class="payment-method" onclick="selectPaymentMethod('debit')">
                     <div class="payment-icon">💳</div>
                     <div class="payment-name">Cartão de Débito</div>
                     <div class="payment-description">À vista</div>
                 </div>
-                
+
                 <div class="payment-method" onclick="selectPaymentMethod('credit')">
                     <div class="payment-icon">💎</div>
                     <div class="payment-name">Cartão de Crédito</div>
@@ -371,7 +378,8 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Número do Cartão</label>
-                    <input type="text" class="form-input" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19">
+                    <input type="text" class="form-input" id="cardNumber" placeholder="1234 5678 9012 3456"
+                        maxlength="19">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -383,7 +391,7 @@
                         <input type="text" class="form-input" id="cardCvv" placeholder="123" maxlength="4">
                     </div>
                 </div>
-                
+
                 <div class="form-group" id="installmentsGroup" style="display: none;">
                     <label class="form-label">Parcelamento</label>
                     <select class="installments-select" id="installments">
@@ -433,14 +441,52 @@
 
     <!-- QR Code Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    
+
     <script>
         let selectedPaymentMethod = null;
         let orderData = null;
         let paymentCheckInterval = null;
 
+        function validarCPF(cpf) {
+            cpf = cpf.replace(/[^\d]+/g, '');
+            if (cpf == '') return false;
+            if (cpf.length != 11 ||
+                cpf == "00000000000" ||
+                cpf == "11111111111" ||
+                cpf == "22222222222" ||
+                cpf == "33333333333" ||
+                cpf == "44444444444" ||
+                cpf == "55555555555" ||
+                cpf == "66666666666" ||
+                cpf == "77777777777" ||
+                cpf == "88888888888" ||
+                cpf == "99999999999")
+                return false;
+
+            // Validação do primeiro dígito
+            var add = 0;
+            for (var i = 0; i < 9; i++)
+                add += parseInt(cpf.charAt(i)) * (10 - i);
+            var rev = 11 - (add % 11);
+            if (rev == 10 || rev == 11)
+                rev = 0;
+            if (rev != parseInt(cpf.charAt(9)))
+                return false;
+
+            // Validação do segundo dígito
+            add = 0;
+            for (var i = 0; i < 10; i++)
+                add += parseInt(cpf.charAt(i)) * (11 - i);
+            rev = 11 - (add % 11);
+            if (rev == 10 || rev == 11)
+                rev = 0;
+            if (rev != parseInt(cpf.charAt(10)))
+                return false;
+            return true;
+        }
+
         // Carrega dados do pedido do localStorage
-        window.onload = function() {
+        window.onload = function () {
             const storedOrder = localStorage.getItem('currentOrder');
             if (storedOrder) {
                 orderData = JSON.parse(storedOrder);
@@ -454,10 +500,10 @@
         function displayOrderSummary() {
             const itemsContainer = document.getElementById('orderItems');
             const totalContainer = document.getElementById('orderTotal');
-            
+
             let html = '';
             let total = 0;
-            
+
             orderData.items.forEach(item => {
                 const itemTotal = (item.unit_amount / 100) * item.quantity;
                 total += itemTotal;
@@ -468,7 +514,7 @@
                     </div>
                 `;
             });
-            
+
             itemsContainer.innerHTML = html;
             totalContainer.textContent = `Total: R$ ${total.toFixed(2)}`;
         }
@@ -478,25 +524,25 @@
             document.querySelectorAll('.payment-method').forEach(el => {
                 el.classList.remove('selected');
             });
-            
+
             // Oculta todos os formulários
             document.querySelectorAll('.payment-form').forEach(el => {
                 el.classList.remove('active');
             });
-            
+
             // Seleciona novo método
             event.target.closest('.payment-method').classList.add('selected');
             selectedPaymentMethod = method;
-            
+
             if (method === 'pix') {
                 document.getElementById('pixForm').classList.add('active');
             } else if (method === 'debit' || method === 'credit') {
                 document.getElementById('cardForm').classList.add('active');
-                
+
                 // Mostra/oculta parcelamento baseado no método
                 const installmentsGroup = document.getElementById('installmentsGroup');
                 const payButton = document.getElementById('cardPayButton');
-                
+
                 if (method === 'credit') {
                     installmentsGroup.style.display = 'block';
                     payButton.textContent = 'Finalizar Pagamento no Crédito';
@@ -519,22 +565,22 @@
             const name = document.getElementById('pixName').value;
             const email = document.getElementById('pixEmail').value;
             const cpf = document.getElementById('pixCpf').value;
-            
+
             if (!name || !email || !cpf) {
                 showError('Por favor, preencha todos os campos');
                 return;
             }
-            
+
             if (cpf.length !== 11) {
                 showError('CPF deve ter 11 dígitos');
                 return;
             }
-            
+
             const button = event.target;
             const originalText = button.textContent;
             button.innerHTML = 'Processando... <span class="loading"></span>';
             button.disabled = true;
-            
+
             try {
                 const response = await fetch('/criar-pedido', {
                     method: 'POST',
@@ -550,37 +596,37 @@
                         }
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.sucesso && data.qr_code) {
                     // Exibe QR Code
                     document.getElementById('qrContainer').classList.add('active');
-                    
+
                     // Gera QR Code
                     const canvas = document.getElementById('qrCodeCanvas');
                     const ctx = canvas.getContext('2d');
                     ctx.clearRect(0, 0, 250, 250);
-                    
+
                     const qr = new QRCode(document.createElement('div'), {
                         text: data.qr_code.qr_code_text,
                         width: 250,
                         height: 250
                     });
-                    
+
                     setTimeout(() => {
                         const img = qr._el.querySelector('img');
                         if (img) {
                             ctx.drawImage(img, 0, 0, 250, 250);
                         }
                     }, 100);
-                    
+
                     // Exibe código PIX
                     document.getElementById('pixCodeText').textContent = data.qr_code.qr_code_text;
-                    
+
                     // Inicia verificação de pagamento
                     startPaymentCheck(data.order_id);
-                    
+
                     showSuccess('QR Code gerado! Escaneie para pagar ou copie o código PIX.');
                 } else {
                     showError(data.erro || 'Erro ao gerar PIX');
@@ -601,38 +647,38 @@
             const customerName = document.getElementById('cardCustomerName').value;
             const email = document.getElementById('cardEmail').value;
             const cpf = document.getElementById('cardCpf').value;
-            
+
             if (!holder || !number || !expiry || !cvv || !customerName || !email || !cpf) {
                 showError('Por favor, preencha todos os campos');
                 return;
             }
-            
+
             if (cpf.length !== 11) {
                 showError('CPF deve ter 11 dígitos');
                 return;
             }
-            
+
             // Valida formato do cartão
             if (number.length < 13 || number.length > 19) {
                 showError('Número do cartão inválido');
                 return;
             }
-            
+
             const [expMonth, expYear] = expiry.split('/');
             if (!expMonth || !expYear || expMonth.length !== 2 || expYear.length !== 2) {
                 showError('Data de validade inválida (MM/AA)');
                 return;
             }
-            
+
             const button = event.target;
             const originalText = button.textContent;
             button.innerHTML = 'Processando... <span class="loading"></span>';
             button.disabled = true;
-            
+
             try {
-                const installments = selectedPaymentMethod === 'credit' ? 
+                const installments = selectedPaymentMethod === 'credit' ?
                     parseInt(document.getElementById('installments').value) : 1;
-                
+
                 const paymentData = {
                     ...orderData,
                     customer: {
@@ -650,7 +696,7 @@
                     payment_type: selectedPaymentMethod,
                     installments: installments
                 };
-                
+
                 const response = await fetch('/criar-pedido-cartao', {
                     method: 'POST',
                     headers: {
@@ -658,15 +704,15 @@
                     },
                     body: JSON.stringify(paymentData)
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.sucesso) {
                     showSuccess('Pagamento aprovado! Redirecionando...');
-                    
+
                     // Limpa dados do localStorage
                     localStorage.removeItem('currentOrder');
-                    
+
                     setTimeout(() => {
                         window.location.href = 'index.html';
                     }, 3000);
@@ -688,7 +734,7 @@
                 const originalText = btn.textContent;
                 btn.textContent = '✓ Copiado!';
                 btn.style.background = '#28a745';
-                
+
                 setTimeout(() => {
                     btn.textContent = originalText;
                     btn.style.background = '';
@@ -701,13 +747,13 @@
                 try {
                     const response = await fetch(`/status-pedido/${orderId}`);
                     const data = await response.json();
-                    
+
                     if (data.status === 'PAID') {
                         clearInterval(paymentCheckInterval);
                         showSuccess('Pagamento confirmado! Redirecionando...');
-                        
+
                         localStorage.removeItem('currentOrder');
-                        
+
                         setTimeout(() => {
                             window.location.href = 'index.html';
                         }, 3000);
@@ -736,7 +782,7 @@
         }
 
         // Formatação de campos
-        document.getElementById('cardNumber').addEventListener('input', function(e) {
+        document.getElementById('cardNumber').addEventListener('input', function (e) {
             let value = e.target.value.replace(/\s/g, '');
             let formattedValue = value.replace(/(.{4})/g, '$1 ').trim();
             if (formattedValue.length > 19) {
@@ -745,7 +791,7 @@
             e.target.value = formattedValue;
         });
 
-        document.getElementById('cardExpiry').addEventListener('input', function(e) {
+        document.getElementById('cardExpiry').addEventListener('input', function (e) {
             let value = e.target.value.replace(/\D/g, '');
             if (value.length >= 2) {
                 value = value.substr(0, 2) + '/' + value.substr(2, 2);
@@ -753,16 +799,17 @@
             e.target.value = value;
         });
 
-        document.getElementById('cardCvv').addEventListener('input', function(e) {
+        document.getElementById('cardCvv').addEventListener('input', function (e) {
             e.target.value = e.target.value.replace(/\D/g, '');
         });
 
         // Formatação CPF
         document.querySelectorAll('#pixCpf, #cardCpf').forEach(input => {
-            input.addEventListener('input', function(e) {
+            input.addEventListener('input', function (e) {
                 e.target.value = e.target.value.replace(/\D/g, '');
             });
         });
     </script>
 </body>
+
 </html>
