@@ -24,6 +24,8 @@ else:
     URL_API = "https://api.pagseguro.com/orders"
 
 # ROTAS PARA SERVIR ARQUIVOS HTML
+
+
 @app.route("/")
 def home_page():
     """Serve a página inicial (index.html)"""
@@ -44,10 +46,12 @@ def home_page():
             ]
         })
 
+
 @app.route("/index.html")
 def index_page():
     """Serve a página inicial"""
     return send_from_directory('.', 'index.html')
+
 
 @app.route("/pagamento.html")
 def pagamento_page():
@@ -55,6 +59,8 @@ def pagamento_page():
     return send_from_directory('.', 'pagamento.html')
 
 # ROTAS DA API
+
+
 @app.route("/api", methods=["GET"])
 def api_info():
     return jsonify({
@@ -62,7 +68,7 @@ def api_info():
         "ambiente": PAGBANK_ENV,
         "endpoints": [
             "GET / - Página inicial",
-            "GET /index.html - Página inicial", 
+            "GET /index.html - Página inicial",
             "GET /pagamento.html - Página de pagamento",
             "POST /criar-pedido - Criar pedido PIX",
             "POST /criar-pedido-cartao - Criar pedido com cartão",
@@ -71,25 +77,28 @@ def api_info():
         ]
     })
 
+
 @app.route("/criar-pedido", methods=["POST"])
 def criar_pedido_pix():
     """Cria pedido com pagamento PIX"""
     try:
         dados = request.json
-        
+
         # Validação básica
         if not dados or not dados.get("items"):
             return jsonify({"erro": "Dados do pedido inválidos"}), 400
-        
+
         # Calcula o total se não foi fornecido
         total_amount = dados.get("total_amount", 0)
         if total_amount == 0:
             for item in dados.get("items", []):
-                total_amount += item.get("unit_amount", 0) * item.get("quantity", 1)
-        
+                total_amount += item.get("unit_amount", 0) * \
+                    item.get("quantity", 1)
+
         # Define expiração do PIX para 30 minutos a partir de agora
-        expiration_date = (datetime.now() + timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%S-03:00")
-        
+        expiration_date = (datetime.now() + timedelta(minutes=30)
+                           ).strftime("%Y-%m-%dT%H:%M:%S-03:00")
+
         # Estrutura do pedido para PagBank
         pedido = {
             "reference_id": dados.get("reference_id", f"DELMONTE_{int(datetime.now().timestamp())}"),
@@ -109,7 +118,8 @@ def criar_pedido_pix():
             "items": [
                 {
                     "reference_id": f"item_{i}",
-                    "name": item["name"][:100],  # PagBank limita a 100 caracteres
+                    # PagBank limita a 100 caracteres
+                    "name": item["name"][:100],
                     "quantity": item["quantity"],
                     "unit_amount": item["unit_amount"]
                 }
@@ -133,14 +143,14 @@ def criar_pedido_pix():
         }
 
         print(f"Enviando pedido para PagBank: {json.dumps(pedido, indent=2)}")
-        
+
         response = requests.post(URL_API, json=pedido, headers=headers)
-        
+
         print(f"Resposta PagBank: {response.status_code} - {response.text}")
-        
+
         if response.status_code in [200, 201]:
             response_data = response.json()
-            
+
             # Extrai informações do QR Code se disponível
             qr_code_info = {}
             if "qr_codes" in response_data and len(response_data["qr_codes"]) > 0:
@@ -150,7 +160,7 @@ def criar_pedido_pix():
                     "qr_code_link": qr_code.get("links", [{}])[0].get("href", "") if qr_code.get("links") else "",
                     "expiration_date": qr_code.get("expiration_date", "")
                 }
-            
+
             return jsonify({
                 "sucesso": True,
                 "order_id": response_data.get("id"),
@@ -170,36 +180,38 @@ def criar_pedido_pix():
         print(f"Erro interno: {str(e)}")
         return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
 
+
 @app.route("/criar-pedido-cartao", methods=["POST"])
 def criar_pedido_cartao():
     """Cria pedido com pagamento por cartão de crédito ou débito"""
     try:
         dados = request.json
-        
+
         # Validação dos dados do cartão
         card_data = dados.get("card_data", {})
-        if not all([card_data.get("number"), card_data.get("holder"), 
-                   card_data.get("exp_month"), card_data.get("exp_year"), 
+        if not all([card_data.get("number"), card_data.get("holder"),
+                   card_data.get("exp_month"), card_data.get("exp_year"),
                    card_data.get("security_code")]):
             return jsonify({"erro": "Dados do cartão incompletos"}), 400
-        
+
         # Calcula o total
         total_amount = dados.get("total_amount", 0)
         if total_amount == 0:
             for item in dados.get("items", []):
-                total_amount += item.get("unit_amount", 0) * item.get("quantity", 1)
-        
+                total_amount += item.get("unit_amount", 0) * \
+                    item.get("quantity", 1)
+
         # Determina o tipo de cartão
         payment_type = dados.get("payment_type", "credit")
         installments = dados.get("installments", 1)
-        
+
         # Para débito, sempre à vista
         if payment_type == "debit":
             installments = 1
             card_type = "DEBIT_CARD"
         else:
             card_type = "CREDIT_CARD"
-        
+
         pedido = {
             "reference_id": dados.get("reference_id", f"DELMONTE_{int(datetime.now().timestamp())}"),
             "customer": {
@@ -236,6 +248,10 @@ def criar_pedido_cartao():
                         "type": card_type,
                         "installments": installments,
                         "capture": True,
+                        "authentication_method": {
+                            "type": "THREEDS",
+                            "id": f"auth_{int(datetime.now().timestamp())}"
+                        } if payment_type == "debit" else None,
                         "card": {
                             "number": card_data["number"],
                             "exp_month": card_data["exp_month"],
@@ -244,7 +260,7 @@ def criar_pedido_cartao():
                             "holder": {
                                 "name": card_data["holder"]
                             },
-                            "store": False  # Não armazenar dados do cartão
+                            "store": False
                         }
                     }
                 }
@@ -258,20 +274,23 @@ def criar_pedido_cartao():
             "Accept": "application/json"
         }
 
-        print(f"Enviando pedido de cartão para PagBank: {json.dumps(pedido, indent=2)}")
-        
+        print(
+            f"Enviando pedido de cartão para PagBank: {json.dumps(pedido, indent=2)}")
+
         response = requests.post(URL_API, json=pedido, headers=headers)
-        
-        print(f"Resposta PagBank (Cartão): {response.status_code} - {response.text}")
-        
+
+        print(
+            f"Resposta PagBank (Cartão): {response.status_code} - {response.text}")
+
         if response.status_code in [200, 201]:
             response_data = response.json()
-            
+
             # Verifica status do pagamento
             charge_status = "UNKNOWN"
             if "charges" in response_data and len(response_data["charges"]) > 0:
-                charge_status = response_data["charges"][0].get("status", "UNKNOWN")
-            
+                charge_status = response_data["charges"][0].get(
+                    "status", "UNKNOWN")
+
             if charge_status == "PAID":
                 return jsonify({
                     "sucesso": True,
@@ -300,6 +319,7 @@ def criar_pedido_cartao():
         print(f"Erro interno no pagamento com cartão: {str(e)}")
         return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
 
+
 @app.route("/status-pedido/<order_id>", methods=["GET"])
 def consultar_status(order_id):
     """Consulta o status de um pedido"""
@@ -311,19 +331,20 @@ def consultar_status(order_id):
         }
 
         response = requests.get(f"{URL_API}/{order_id}", headers=headers)
-        
+
         if response.status_code == 200:
             data = response.json()
-            
+
             # Determina o status baseado no tipo de pagamento
             status = "UNKNOWN"
             payment_method = "UNKNOWN"
-            
+
             if data.get("charges"):
                 # Pagamento com cartão
                 charge = data["charges"][0]
                 status = charge.get("status", "UNKNOWN")
-                payment_method = charge.get("payment_method", {}).get("type", "CARD")
+                payment_method = charge.get(
+                    "payment_method", {}).get("type", "CARD")
             elif data.get("qr_codes"):
                 # Pagamento PIX
                 qr_code = data["qr_codes"][0]
@@ -333,7 +354,7 @@ def consultar_status(order_id):
                 else:
                     status = "WAITING"
                 payment_method = "PIX"
-            
+
             return jsonify({
                 "order_id": data.get("id"),
                 "reference_id": data.get("reference_id"),
@@ -352,45 +373,52 @@ def consultar_status(order_id):
     except Exception as e:
         return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
 
+
 @app.route("/webhook-pagbank", methods=["POST"])
 def webhook_pagbank():
     """Recebe notificações do PagBank sobre mudanças no status do pagamento"""
     try:
         dados = request.json
         print(f"Webhook recebido: {json.dumps(dados, indent=2)}")
-        
+
         # Extrai informações importantes
         if dados and dados.get("charges"):
             charge = dados["charges"][0]
             status = charge.get("status")
             reference_id = dados.get("reference_id")
-            payment_method = charge.get("payment_method", {}).get("type", "UNKNOWN")
-            
+            payment_method = charge.get(
+                "payment_method", {}).get("type", "UNKNOWN")
+
             # Aqui você pode implementar a lógica baseada no status:
             if status == "PAID":
                 # Pagamento confirmado
-                print(f"✅ Pagamento confirmado para pedido {reference_id} via {payment_method}")
+                print(
+                    f"✅ Pagamento confirmado para pedido {reference_id} via {payment_method}")
                 # TODO: Atualizar banco de dados, enviar email, notificar cozinha
-                
+
             elif status == "DECLINED":
                 # Pagamento recusado
-                print(f"❌ Pagamento recusado para pedido {reference_id} via {payment_method}")
+                print(
+                    f"❌ Pagamento recusado para pedido {reference_id} via {payment_method}")
                 # TODO: Notificar cliente
-                
+
             elif status == "CANCELED":
                 # Pagamento cancelado
-                print(f"⚠️ Pagamento cancelado para pedido {reference_id} via {payment_method}")
+                print(
+                    f"⚠️ Pagamento cancelado para pedido {reference_id} via {payment_method}")
                 # TODO: Atualizar status no banco
-                
+
             elif status == "AUTHORIZED":
                 # Pagamento autorizado (cartão)
-                print(f"🔄 Pagamento autorizado para pedido {reference_id} via {payment_method}")
+                print(
+                    f"🔄 Pagamento autorizado para pedido {reference_id} via {payment_method}")
                 # TODO: Processar autorização
-        
+
         return jsonify({"status": "webhook processado"}), 200
     except Exception as e:
         print(f"Erro no webhook: {str(e)}")
         return jsonify({"erro": str(e)}), 500
+
 
 @app.route("/config", methods=["GET"])
 def get_config():
@@ -404,6 +432,7 @@ def get_config():
         "max_parcelas": 6
     })
 
+
 if __name__ == "__main__":
     # Verifica se o token foi configurado
     if PAGBANK_TOKEN == "SEU_TOKEN_SANDBOX_AQUI":
@@ -412,6 +441,6 @@ if __name__ == "__main__":
     else:
         print(f"✅ Token PagBank configurado!")
         print(f"📍 Ambiente: {PAGBANK_ENV}")
-    
+
     print("🍕 API DEL MONTE rodando em http://localhost:5000")
     app.run(port=5000, debug=True)
