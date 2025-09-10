@@ -561,34 +561,34 @@
         let currentTab = 'pending';
 
         // Simular dados de exemplo
-        const sampleOrders = [
-            {
-                id: 'DELMONTE_1757123456',
-                customer: {
-                    name: 'João Silva',
-                    email: 'joao@email.com',
-                    phone: '(21) 99999-9999',
-                    address: {
-                        street: 'Rua das Flores, 123',
-                        neighborhood: 'Centro',
-                        city: 'Rio de Janeiro',
-                        cep: '20000-000'
-                    }
-                },
-                items: [
-                    { name: 'Pizza Margherita', quantity: 1, price: 35.00 },
-                    { name: 'Refrigerante Lata', quantity: 2, price: 5.00 }
-                ],
-                subtotal: 45.00,
-                deliveryFee: 5.00,
-                total: 50.00,
-                paymentMethod: 'PIX',
-                paymentStatus: 'PAID',
-                status: 'pending',
-                createdAt: new Date(),
-                paidAt: new Date()
-            }
-        ];
+        //const sampleOrders = [
+           // {
+              //  id: 'DELMONTE_1757123456',
+              //  customer: {
+             //       name: 'João Silva',
+             //       email: 'joao@email.com',
+             //       phone: '(21) 99999-9999',
+             //       address: {
+             //           street: 'Rua das Flores, 123',
+              //          neighborhood: 'Centro',
+              //          city: 'Rio de Janeiro',
+              //          cep: '20000-000'
+               //     }
+               // },
+               // items: [
+              //      { name: 'Pizza Margherita', quantity: 1, price: 35.00 },
+              //      { name: 'Refrigerante Lata', quantity: 2, price: 5.00 }
+              //  ],
+              //  subtotal: 45.00,
+              //  deliveryFee: 5.00,
+              //  total: 50.00,
+              //  paymentMethod: 'PIX',
+              //  paymentStatus: 'PAID',
+              //  status: 'pending',
+              //  createdAt: new Date(),
+              //  paidAt: new Date()
+           // }
+        //];
 
         async function loadOrders() {
             try {
@@ -597,13 +597,14 @@
 
                 if (data.sucesso) {
                     orders = data.pedidos;
+                    console.log('Pedidos carregados da API:', orders);
                 } else {
                     console.error('Erro ao carregar pedidos:', data.erro);
-                    orders = [...sampleOrders]; // Fallback para dados de exemplo
+                    orders = []; // Não usar dados simulados
                 }
             } catch (error) {
                 console.error('Erro na requisição:', error);
-                orders = [...sampleOrders]; // Fallback para dados de exemplo
+                orders = []; // Não usar dados simulados
             }
             renderOrders();
             updateStats();
