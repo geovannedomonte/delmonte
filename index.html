@@ -180,6 +180,61 @@
             font-size: 0.9rem;
         }
 
+        .pizza-type-selector {
+            margin-bottom: 1rem;
+        }
+
+        .pizza-type-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .pizza-type-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .pizza-type-btn.active {
+            border-color: #e74c3c;
+            background: #fff5f5;
+            color: #e74c3c;
+        }
+
+        .half-pizza-selector {
+            display: none;
+            margin-bottom: 1rem;
+        }
+
+        .half-pizza-selector.active {
+            display: block;
+        }
+
+        .half-selector {
+            margin-bottom: 0.5rem;
+        }
+
+        .half-selector label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .half-selector select {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+
         .product-controls {
             display: flex;
             align-items: center;
@@ -336,73 +391,58 @@
             padding: 2rem;
         }
 
-        /* Payment Modal */
-        .payment-modal {
-            text-align: center;
-            padding: 2rem;
-        }
-
-        .payment-modal h2 {
-            color: #e74c3c;
+        /* Address Form */
+        .address-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 15px;
             margin-bottom: 1.5rem;
         }
 
-        .qr-code-container {
-            background: white;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            margin: 1.5rem 0;
+        .address-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: #e74c3c;
         }
 
-        .qr-code-container img {
-            max-width: 250px;
-            margin: 1rem 0;
+        .form-group {
+            margin-bottom: 1rem;
         }
 
-        .pix-code {
-            background: #f8f9fa;
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #e74c3c;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1rem;
+        }
+
+        .delivery-fee {
+            background: #e8f5e8;
             padding: 1rem;
             border-radius: 10px;
-            margin: 1rem 0;
-            word-break: break-all;
-            font-family: monospace;
-            font-size: 0.9rem;
-        }
-
-        .copy-btn {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-
-        .copy-btn:hover {
-            background: #0056b3;
-        }
-
-        .payment-status {
-            padding: 1rem;
-            border-radius: 10px;
-            margin: 1rem 0;
-        }
-
-        .payment-status.waiting {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .payment-status.success {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .payment-status.error {
-            background: #f8d7da;
-            color: #721c24;
+            margin-top: 1rem;
+            text-align: center;
+            font-weight: bold;
         }
 
         /* Loading */
@@ -446,13 +486,8 @@
                 padding: 1.5rem;
             }
 
-            .nav-buttons {
-                gap: 0.5rem;
-            }
-
-            .nav-btn {
-                padding: 8px 16px;
-                font-size: 0.9rem;
+            .form-row {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -500,15 +535,42 @@
                         <div class="product-info">
                             <h3 class="product-name">Pizza Margherita</h3>
                             <p class="product-description">Molho de tomate, mussarela, manjericão fresco e azeite</p>
+                            
+                            <div class="pizza-type-selector">
+                                <div class="pizza-type-buttons">
+                                    <button class="pizza-type-btn active" onclick="selectPizzaType(this, 'inteira', 'margherita')">Pizza Inteira</button>
+                                    <button class="pizza-type-btn" onclick="selectPizzaType(this, 'meio', 'margherita')">Meio a Meio</button>
+                                </div>
+                                
+                                <div class="half-pizza-selector" id="half-margherita">
+                                    <div class="half-selector">
+                                        <label>Primeira metade:</label>
+                                        <select id="half1-margherita">
+                                            <option value="margherita">Margherita</option>
+                                        </select>
+                                    </div>
+                                    <div class="half-selector">
+                                        <label>Segunda metade:</label>
+                                        <select id="half2-margherita">
+                                            <option value="">Escolha o sabor</option>
+                                            <option value="pepperoni">Pepperoni</option>
+                                            <option value="quatro-queijos">Quatro Queijos</option>
+                                            <option value="calabresa">Calabresa</option>
+                                            <option value="portuguesa">Portuguesa</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="product-controls">
                                 <div class="quantity-control">
                                     <button class="qty-btn" onclick="changeQuantity(this, -1)">-</button>
                                     <input type="number" class="qty-input" value="1" min="1">
                                     <button class="qty-btn" onclick="changeQuantity(this, 1)">+</button>
                                 </div>
-                                <span class="product-price">R$ 1,00</span>
+                                <span class="product-price" id="price-margherita">R$ 1,00</span>
                             </div>
-                            <button class="add-to-cart" onclick="addToCart('Pizza Margherita', 1.00, this)">
+                            <button class="add-to-cart" onclick="addPizzaToCart('margherita', this)">
                                 Adicionar ao Carrinho
                             </button>
                         </div>
@@ -519,15 +581,42 @@
                         <div class="product-info">
                             <h3 class="product-name">Pizza Pepperoni</h3>
                             <p class="product-description">Molho de tomate, mussarela e pepperoni</p>
+                            
+                            <div class="pizza-type-selector">
+                                <div class="pizza-type-buttons">
+                                    <button class="pizza-type-btn active" onclick="selectPizzaType(this, 'inteira', 'pepperoni')">Pizza Inteira</button>
+                                    <button class="pizza-type-btn" onclick="selectPizzaType(this, 'meio', 'pepperoni')">Meio a Meio</button>
+                                </div>
+                                
+                                <div class="half-pizza-selector" id="half-pepperoni">
+                                    <div class="half-selector">
+                                        <label>Primeira metade:</label>
+                                        <select id="half1-pepperoni">
+                                            <option value="pepperoni">Pepperoni</option>
+                                        </select>
+                                    </div>
+                                    <div class="half-selector">
+                                        <label>Segunda metade:</label>
+                                        <select id="half2-pepperoni">
+                                            <option value="">Escolha o sabor</option>
+                                            <option value="margherita">Margherita</option>
+                                            <option value="quatro-queijos">Quatro Queijos</option>
+                                            <option value="calabresa">Calabresa</option>
+                                            <option value="portuguesa">Portuguesa</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="product-controls">
                                 <div class="quantity-control">
                                     <button class="qty-btn" onclick="changeQuantity(this, -1)">-</button>
                                     <input type="number" class="qty-input" value="1" min="1">
                                     <button class="qty-btn" onclick="changeQuantity(this, 1)">+</button>
                                 </div>
-                                <span class="product-price">R$ 1,00</span>
+                                <span class="product-price" id="price-pepperoni">R$ 1,00</span>
                             </div>
-                            <button class="add-to-cart" onclick="addToCart('Pizza Pepperoni', 42.00, this)">
+                            <button class="add-to-cart" onclick="addPizzaToCart('pepperoni', this)">
                                 Adicionar ao Carrinho
                             </button>
                         </div>
@@ -538,15 +627,42 @@
                         <div class="product-info">
                             <h3 class="product-name">Pizza Quatro Queijos</h3>
                             <p class="product-description">Mussarela, gorgonzola, parmesão e provolone</p>
+                            
+                            <div class="pizza-type-selector">
+                                <div class="pizza-type-buttons">
+                                    <button class="pizza-type-btn active" onclick="selectPizzaType(this, 'inteira', 'quatro-queijos')">Pizza Inteira</button>
+                                    <button class="pizza-type-btn" onclick="selectPizzaType(this, 'meio', 'quatro-queijos')">Meio a Meio</button>
+                                </div>
+                                
+                                <div class="half-pizza-selector" id="half-quatro-queijos">
+                                    <div class="half-selector">
+                                        <label>Primeira metade:</label>
+                                        <select id="half1-quatro-queijos">
+                                            <option value="quatro-queijos">Quatro Queijos</option>
+                                        </select>
+                                    </div>
+                                    <div class="half-selector">
+                                        <label>Segunda metade:</label>
+                                        <select id="half2-quatro-queijos">
+                                            <option value="">Escolha o sabor</option>
+                                            <option value="margherita">Margherita</option>
+                                            <option value="pepperoni">Pepperoni</option>
+                                            <option value="calabresa">Calabresa</option>
+                                            <option value="portuguesa">Portuguesa</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="product-controls">
                                 <div class="quantity-control">
                                     <button class="qty-btn" onclick="changeQuantity(this, -1)">-</button>
                                     <input type="number" class="qty-input" value="1" min="1">
                                     <button class="qty-btn" onclick="changeQuantity(this, 1)">+</button>
                                 </div>
-                                <span class="product-price">R$ 1,00</span>
+                                <span class="product-price" id="price-quatro-queijos">R$ 1,00</span>
                             </div>
-                            <button class="add-to-cart" onclick="addToCart('Pizza Quatro Queijos', 45.00, this)">
+                            <button class="add-to-cart" onclick="addPizzaToCart('quatro-queijos', this)">
                                 Adicionar ao Carrinho
                             </button>
                         </div>
@@ -569,9 +685,9 @@
                                     <input type="number" class="qty-input" value="1" min="1">
                                     <button class="qty-btn" onclick="changeQuantity(this, 1)">+</button>
                                 </div>
-                                <span class="product-price">R$ 28,00</span>
+                                <span class="product-price">R$ 1,00</span>
                             </div>
-                            <button class="add-to-cart" onclick="addToCart('Calzone Tradicional', 28.00, this)">
+                            <button class="add-to-cart" onclick="addToCart('Calzone Tradicional', 1.00, this)">
                                 Adicionar ao Carrinho
                             </button>
                         </div>
@@ -588,9 +704,9 @@
                                     <input type="number" class="qty-input" value="1" min="1">
                                     <button class="qty-btn" onclick="changeQuantity(this, 1)">+</button>
                                 </div>
-                                <span class="product-price">R$ 32,00</span>
+                                <span class="product-price">R$ 1,00</span>
                             </div>
-                            <button class="add-to-cart" onclick="addToCart('Calzone Frango', 32.00, this)">
+                            <button class="add-to-cart" onclick="addToCart('Calzone Frango', 1.00, this)">
                                 Adicionar ao Carrinho
                             </button>
                         </div>
@@ -613,9 +729,9 @@
                                     <input type="number" class="qty-input" value="1" min="1">
                                     <button class="qty-btn" onclick="changeQuantity(this, 1)">+</button>
                                 </div>
-                                <span class="product-price">R$ 5,00</span>
+                                <span class="product-price">R$ 1,00</span>
                             </div>
-                            <button class="add-to-cart" onclick="addToCart('Refrigerante Lata', 5.00, this)">
+                            <button class="add-to-cart" onclick="addToCart('Refrigerante Lata', 1.00, this)">
                                 Adicionar ao Carrinho
                             </button>
                         </div>
@@ -632,9 +748,9 @@
                                     <input type="number" class="qty-input" value="1" min="1">
                                     <button class="qty-btn" onclick="changeQuantity(this, 1)">+</button>
                                 </div>
-                                <span class="product-price">R$ 8,00</span>
+                                <span class="product-price">R$ 1,00</span>
                             </div>
-                            <button class="add-to-cart" onclick="addToCart('Suco Natural', 8.00, this)">
+                            <button class="add-to-cart" onclick="addToCart('Suco Natural', 1.00, this)">
                                 Adicionar ao Carrinho
                             </button>
                         </div>
@@ -649,45 +765,69 @@
         <div class="modal-content">
             <button class="close-btn" onclick="closeCart()">&times;</button>
             <h2>Seu Carrinho</h2>
+            
+            <!-- Address Section -->
+            <div class="address-section">
+                <div class="address-title">📍 Endereço de Entrega</div>
+                <div class="form-group">
+                    <label class="form-label">CEP</label>
+                    <input type="text" class="form-input" id="cep" placeholder="00000-000" maxlength="9" onchange="validateCEP()">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Rua / Avenida</label>
+                        <input type="text" class="form-input" id="street" placeholder="Ex: Rua das Flores">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Número</label>
+                        <input type="text" class="form-input" id="number" placeholder="123">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Complemento (opcional)</label>
+                    <input type="text" class="form-input" id="complement" placeholder="Apt 45, Bloco B">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Bairro</label>
+                        <input type="text" class="form-input" id="neighborhood" placeholder="Centro">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Cidade</label>
+                        <input type="text" class="form-input" id="city" placeholder="São Paulo">
+                    </div>
+                </div>
+                <div class="delivery-fee" id="deliveryFee">
+                    Taxa de entrega: R$ 5,00
+                </div>
+            </div>
+            
             <div id="cartItems"></div>
             <div class="cart-total" id="cartTotal">Total: R$ 0,00</div>
             <button class="checkout-btn" onclick="checkout()">Finalizar Compra</button>
         </div>
     </div>
 
-    <!-- Payment Modal -->
-    <div id="paymentModal" class="modal">
-        <div class="modal-content payment-modal">
-            <button class="close-btn" onclick="closePayment()">&times;</button>
-            <h2>Pagamento via PIX</h2>
-            
-            <div class="payment-status waiting" id="paymentStatus">
-                ⏳ Aguardando pagamento...
-            </div>
-
-            <div class="qr-code-container">
-                <p><strong>Escaneie o QR Code com seu app bancário:</strong></p>
-                <canvas id="qrCodeCanvas"></canvas>
-                
-                <p style="margin-top: 1rem;"><strong>Ou copie o código PIX:</strong></p>
-                <div class="pix-code" id="pixCode">Carregando...</div>
-                <button class="copy-btn" onclick="copyPixCode()">📋 Copiar Código PIX</button>
-            </div>
-
-            <div style="margin-top: 1rem;">
-                <small>⏱️ Este QR Code expira em 30 minutos</small>
-            </div>
-        </div>
-    </div>
-
-    <!-- QR Code Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    
     <script>
         let cart = [];
         let cartCount = 0;
-        let currentOrderId = null;
-        let paymentCheckInterval = null;
+        let deliveryFee = 5.00;
+
+        const pizzaPrices = {
+            'margherita': 1.00,
+            'pepperoni': 1.00,
+            'quatro-queijos': 1.00,
+            'calabresa': 1.00,
+            'portuguesa': 1.00
+        };
+
+        const pizzaNames = {
+            'margherita': 'Margherita',
+            'pepperoni': 'Pepperoni',
+            'quatro-queijos': 'Quatro Queijos',
+            'calabresa': 'Calabresa',
+            'portuguesa': 'Portuguesa'
+        };
 
         function showCategory(category) {
             // Hide all sections
@@ -710,6 +850,97 @@
             let newValue = parseInt(input.value) + change;
             if (newValue < 1) newValue = 1;
             input.value = newValue;
+        }
+
+        function selectPizzaType(button, type, pizzaId) {
+            // Update buttons
+            const card = button.closest('.product-card');
+            card.querySelectorAll('.pizza-type-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            button.classList.add('active');
+
+            // Show/hide half pizza selector
+            const halfSelector = document.getElementById(`half-${pizzaId}`);
+            if (type === 'meio') {
+                halfSelector.classList.add('active');
+                updatePizzaPrice(pizzaId, type);
+            } else {
+                halfSelector.classList.remove('active');
+                updatePizzaPrice(pizzaId, type);
+            }
+        }
+
+        function updatePizzaPrice(pizzaId, type) {
+            const priceElement = document.getElementById(`price-${pizzaId}`);
+            const basePrice = pizzaPrices[pizzaId];
+            
+            if (type === 'meio') {
+                const half2Select = document.getElementById(`half2-${pizzaId}`);
+                const half2Value = half2Select.value;
+                
+                if (half2Value) {
+                    const half2Price = pizzaPrices[half2Value];
+                    const avgPrice = (basePrice + half2Price) / 2;
+                    priceElement.textContent = `R$ ${avgPrice.toFixed(2)}`;
+                } else {
+                    priceElement.textContent = `R$ ${basePrice.toFixed(2)}`;
+                }
+            } else {
+                priceElement.textContent = `R$ ${basePrice.toFixed(2)}`;
+            }
+        }
+
+        // Add event listeners for half pizza selectors
+        document.addEventListener('change', function(e) {
+            if (e.target.id && e.target.id.startsWith('half2-')) {
+                const pizzaId = e.target.id.replace('half2-', '');
+                updatePizzaPrice(pizzaId, 'meio');
+            }
+        });
+
+        function addPizzaToCart(pizzaId, button) {
+            const card = button.closest('.product-card');
+            const quantity = parseInt(card.querySelector('.qty-input').value);
+            const activePizzaType = card.querySelector('.pizza-type-btn.active').textContent.includes('Inteira') ? 'inteira' : 'meio';
+            
+            let name = pizzaNames[pizzaId];
+            let price = pizzaPrices[pizzaId];
+            
+            if (activePizzaType === 'meio') {
+                const half2Select = document.getElementById(`half2-${pizzaId}`);
+                const half2Value = half2Select.value;
+                
+                if (!half2Value) {
+                    alert('Selecione o segundo sabor para pizza meio a meio');
+                    return;
+                }
+                
+                const half2Name = pizzaNames[half2Value];
+                const half2Price = pizzaPrices[half2Value];
+                
+                name = `${name} / ${half2Name} (Meio a Meio)`;
+                price = (price + half2Price) / 2;
+            }
+            
+            // Check if item already exists in cart
+            const existingItem = cart.find(item => item.name === name);
+            
+            if (existingItem) {
+                existingItem.quantity += quantity;
+            } else {
+                cart.push({
+                    name: name,
+                    price: price,
+                    quantity: quantity
+                });
+            }
+            
+            updateCartCount();
+            showAddedMessage(button);
+            
+            // Reset quantity to 1
+            card.querySelector('.qty-input').value = 1;
         }
 
         function addToCart(name, price, button) {
@@ -761,13 +992,6 @@
             document.getElementById('cartModal').style.display = 'none';
         }
 
-        function closePayment() {
-            document.getElementById('paymentModal').style.display = 'none';
-            if (paymentCheckInterval) {
-                clearInterval(paymentCheckInterval);
-            }
-        }
-
         function renderCartItems() {
             const cartItemsContainer = document.getElementById('cartItems');
             const cartTotal = document.getElementById('cartTotal');
@@ -778,12 +1002,12 @@
                 return;
             }
             
-            let total = 0;
+            let subtotal = 0;
             cartItemsContainer.innerHTML = '';
             
             cart.forEach((item, index) => {
                 const itemTotal = item.price * item.quantity;
-                total += itemTotal;
+                subtotal += itemTotal;
                 
                 const cartItem = document.createElement('div');
                 cartItem.className = 'cart-item';
@@ -802,7 +1026,14 @@
                 cartItemsContainer.appendChild(cartItem);
             });
             
-            cartTotal.textContent = `Total: R$ ${total.toFixed(2)}`;
+            const total = subtotal + deliveryFee;
+            cartTotal.innerHTML = `
+                <div>Subtotal: R$ ${subtotal.toFixed(2)}</div>
+                <div>Taxa de entrega: R$ ${deliveryFee.toFixed(2)}</div>
+                <div style="border-top: 2px solid #e74c3c; padding-top: 0.5rem; margin-top: 0.5rem;">
+                    <strong>Total: R$ ${total.toFixed(2)}</strong>
+                </div>
+            `;
         }
 
         function updateCartItemQuantity(index, change) {
@@ -820,87 +1051,107 @@
             renderCartItems();
         }
 
-        // Substitua a função checkout existente no index.html por esta:
-
-async function checkout() {
-    if (cart.length === 0) {
-        alert('Seu carrinho está vazio!');
-        return;
-    }
-
-    // Converte dados do carrinho para o formato da API
-    const orderData = {
-        items: cart.map(item => ({
-            name: item.name,
-            quantity: item.quantity,
-            unit_amount: Math.round(item.price * 100) // Convert to cents
-        })),
-        total_amount: Math.round(cart.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 100),
-        reference_id: 'DELMONTE_' + Date.now()
-    };
-
-    // Salva os dados do pedido no localStorage
-    localStorage.setItem('currentOrder', JSON.stringify(orderData));
-
-    // Redireciona para a página de pagamento
-    window.location.href = 'pagamento.html';
-}
-
-        function copyPixCode() {
-            const pixCode = document.getElementById('pixCode').textContent;
-            navigator.clipboard.writeText(pixCode).then(() => {
-                const btn = event.target;
-                const originalText = btn.textContent;
-                btn.textContent = '✓ Copiado!';
-                btn.style.background = '#28a745';
+        function validateCEP() {
+            const cep = document.getElementById('cep').value.replace(/\D/g, '');
+            
+            if (cep.length === 8) {
+                // Simular consulta de CEP
+                document.getElementById('street').value = 'Rua Exemplo';
+                document.getElementById('neighborhood').value = 'Centro';
+                document.getElementById('city').value = 'Rio de Janeiro';
                 
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.style.background = '';
-                }, 2000);
-            });
+                // Calcular taxa de entrega baseada no CEP
+                calculateDeliveryFee(cep);
+            }
         }
 
-        async function startPaymentCheck(orderId) {
-            // Check payment status every 5 seconds
-            paymentCheckInterval = setInterval(async () => {
-                try {
-                    const response = await fetch(`/status-pedido/${orderId}`);
-                    const data = await response.json();
-                    
-                    console.log("Status do pagamento:", data.status);
-                    
-                    if (data.status === 'PAID') {
-                        // Payment successful
-                        document.getElementById('paymentStatus').className = 'payment-status success';
-                        document.getElementById('paymentStatus').innerHTML = '✅ Pagamento confirmado! Seu pedido está sendo preparado.';
-                        
-                        clearInterval(paymentCheckInterval);
-                        
-                        setTimeout(() => {
-                            closePayment();
-                            alert('Pagamento confirmado! Seu pedido está sendo preparado. 🍕');
-                        }, 3000);
-                    } else if (data.status === 'DECLINED' || data.status === 'CANCELED') {
-                        // Payment failed
-                        document.getElementById('paymentStatus').className = 'payment-status error';
-                        document.getElementById('paymentStatus').innerHTML = '❌ Pagamento não foi processado. Tente novamente.';
-                        
-                        clearInterval(paymentCheckInterval);
-                    }
-                } catch (err) {
-                    console.error("Erro ao verificar status:", err);
-                }
-            }, 5000);
+        function calculateDeliveryFee(cep) {
+            // Simular diferentes taxas por região
+            const firstDigit = parseInt(cep.charAt(0));
+            
+            if (firstDigit <= 2) {
+                deliveryFee = 3.00; // Zona próxima
+            } else if (firstDigit <= 5) {
+                deliveryFee = 5.00; // Zona média
+            } else {
+                deliveryFee = 8.00; // Zona distante
+            }
+            
+            document.getElementById('deliveryFee').textContent = `Taxa de entrega: R$ ${deliveryFee.toFixed(2)}`;
+            renderCartItems(); // Atualiza o total
         }
+
+        function validateAddress() {
+            const cep = document.getElementById('cep').value;
+            const street = document.getElementById('street').value;
+            const number = document.getElementById('number').value;
+            const neighborhood = document.getElementById('neighborhood').value;
+            const city = document.getElementById('city').value;
+            
+            if (!cep || !street || !number || !neighborhood || !city) {
+                alert('Por favor, preencha todos os campos obrigatórios do endereço');
+                return false;
+            }
+            
+            if (cep.replace(/\D/g, '').length !== 8) {
+                alert('CEP deve ter 8 dígitos');
+                return false;
+            }
+            
+            return true;
+        }
+
+        function checkout() {
+            if (cart.length === 0) {
+                alert('Seu carrinho está vazio!');
+                return;
+            }
+
+            if (!validateAddress()) {
+                return;
+            }
+
+            // Converte dados do carrinho para o formato da API
+            const orderData = {
+                items: cart.map(item => ({
+                    name: item.name,
+                    quantity: item.quantity,
+                    unit_amount: Math.round(item.price * 100) // Convert to cents
+                })),
+                total_amount: Math.round((cart.reduce((sum, item) => sum + (item.price * item.quantity), 0) + deliveryFee) * 100),
+                reference_id: 'DELMONTE_' + Date.now(),
+                delivery_address: {
+                    cep: document.getElementById('cep').value,
+                    street: document.getElementById('street').value,
+                    number: document.getElementById('number').value,
+                    complement: document.getElementById('complement').value,
+                    neighborhood: document.getElementById('neighborhood').value,
+                    city: document.getElementById('city').value
+                },
+                delivery_fee: Math.round(deliveryFee * 100)
+            };
+
+            // Salva os dados do pedido no localStorage
+            localStorage.setItem('currentOrder', JSON.stringify(orderData));
+
+            // Redireciona para a página de pagamento
+            window.location.href = 'pagamento.html';
+        }
+
+        // Formatação automática do CEP
+        document.getElementById('cep').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 5) {
+                value = value.substr(0, 5) + '-' + value.substr(5, 3);
+            }
+            e.target.value = value;
+        });
 
         // Close modals when clicking outside
         window.onclick = function(event) {
             if (event.target.classList.contains('modal')) {
                 if (event.target.id === 'cartModal') {
                     closeCart();
-                } else if (event.target.id === 'paymentModal') {
-                    closePayment();
                 }
             }
         }
