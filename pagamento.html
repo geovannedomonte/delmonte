@@ -431,14 +431,10 @@
         </div>
     </div>
 
-    <!-- QR Code Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    
     <script>
         let selectedPaymentMethod = null;
         let orderData = null;
         let paymentCheckInterval = null;
-        
 
         // Carrega dados do pedido do localStorage
         window.onload = function() {
@@ -663,12 +659,25 @@
                 const data = await response.json();
                 
                 if (data.sucesso) {
-                    showSuccess('Pagamento aprovado! Redirecionando...');
+                    showSuccess('Pagamento aprovado! Redirecionando para gestão de pedidos...');
                     
-                    // Limpa dados do localStorage
+                    // Enviar dados do pedido para a página de pedidos
+                    const pedidoCompleto = {
+                        ...orderData,
+                        order_id: data.order_id,
+                        payment_method: selectedPaymentMethod.toUpperCase(),
+                        payment_status: 'PAID',
+                        confirmed_at: new Date().toISOString()
+                    };
+                    
+                    // Limpar dados temporários
                     localStorage.removeItem('currentOrder');
                     
                     setTimeout(() => {
+                        // Abrir página de pedidos em nova aba (para equipe da cozinha)
+                        window.open('pedidos.html', '_blank');
+                        
+                        // Redirecionar cliente para página inicial
                         window.location.href = 'index.html';
                     }, 3000);
                 } else {
@@ -705,13 +714,29 @@
                     
                     if (data.status === 'PAID') {
                         clearInterval(paymentCheckInterval);
-                        showSuccess('Pagamento confirmado! Redirecionando...');
+                        showSuccess('Pagamento confirmado! Redirecionando para gestão de pedidos...');
                         
+                        // Enviar dados do pedido para a página de pedidos
+                        const pedidoCompleto = {
+                            ...orderData,
+                            order_id: orderId,
+                            payment_method: 'PIX',
+                            payment_status: 'PAID',
+                            confirmed_at: new Date().toISOString()
+                        };
+                        
+                        // Limpar dados temporários
                         localStorage.removeItem('currentOrder');
                         
+                        // Redirecionar para página de pedidos após 3 segundos
                         setTimeout(() => {
+                            // Abrir página de pedidos em nova aba (para equipe da cozinha)
+                            window.open('pedidos.html', '_blank');
+                            
+                            // Redirecionar cliente para página inicial
                             window.location.href = 'index.html';
                         }, 3000);
+                        
                     } else if (data.status === 'DECLINED' || data.status === 'CANCELED') {
                         clearInterval(paymentCheckInterval);
                         showError('Pagamento não foi processado');

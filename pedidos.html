@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Pedidos - DEL MONTE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .refresh-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 0.5rem;
+        }
+
+        .tabs {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .tab-buttons {
+            display: flex;
+            background: #f8f9fa;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 1rem 2rem;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: #e74c3c;
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #e74c3c;
+        }
+
+        .tab-content {
+            padding: 2rem;
+            min-height: 400px;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        .orders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+        }
+
+        .order-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #28a745;
+            transition: all 0.3s ease;
+        }
+
+        .order-card.pending {
+            border-left-color: #ffc107;
+        }
+
+        .order-card.preparing {
+            border-left-color: #17a2b8;
+        }
+
+        .order-card.completed {
+            border-left-color: #28a745;
+        }
+
+        .order-card.delivered {
+            border-left-color: #6c757d;
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f8f9fa;
+        }
+
+        .order-id {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+
+        .order-time {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .order-status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-preparing {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-delivered {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .customer-info {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .customer-name {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .customer-details {
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .order-items {
+            margin-bottom: 1rem;
+        }
+
+        .items-title {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #e74c3c;
+        }
+
+        .item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .item:last-child {
+            border-bottom: none;
+        }
+
+        .item-name {
+            font-weight: bold;
+        }
+
+        .item-details {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .item-price {
+            font-weight: bold;
+            color: #28a745;
+        }
+
+        .order-total {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: #e8f5e8;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .total-breakdown {
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .total-final {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #28a745;
+        }
+
+        .payment-info {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: #d4edda;
+            border-radius: 10px;
+            border: 1px solid #c3e6cb;
+        }
+
+        .payment-status {
+            font-weight: bold;
+            color: #155724;
+            margin-bottom: 0.5rem;
+        }
+
+        .payment-method {
+            font-size: 0.9rem;
+            color: #155724;
+        }
+
+        .order-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .btn-start {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-start:hover {
+            background: #e0a800;
+        }
+
+        .btn-ready {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-ready:hover {
+            background: #138496;
+        }
+
+        .btn-delivered {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-delivered:hover {
+            background: #218838;
+        }
+
+        .btn-print {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-print:hover {
+            background: #5a6268;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #e74c3c;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            background: #dc3545;
+        }
+
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .sound-toggle {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .orders-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .order-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🍕 DEL MONTE - Gestão de Pedidos</div>
+            <div class="header-actions">
+                <div class="audio-controls">
+                    <button class="sound-toggle" onclick="toggleSound()" id="soundToggle">🔊 Som ON</button>
+                </div>
+                <button class="refresh-btn" onclick="refreshOrders()">
+                    🔄 Atualizar
+                </button>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="pendingCount">0</div>
+                <div class="stat-label">Pedidos Pendentes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="preparingCount">0</div>
+                <div class="stat-label">Em Preparo</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="todayCount">0</div>
+                <div class="stat-label">Pedidos Hoje</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="todayRevenue">R$ 0,00</div>
+                <div class="stat-label">Receita Hoje</div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="switchTab('pending')">
+                    🕐 Novos Pedidos
+                </button>
+                <button class="tab-btn" onclick="switchTab('preparing')">
+                    👨‍🍳 Em Preparo
+                </button>
+                <button class="tab-btn" onclick="switchTab('completed')">
+                    ✅ Finalizados
+                </button>
+                <button class="tab-btn" onclick="switchTab('delivered')">
+                    🚚 Entregues
+                </button>
+            </div>
+            
+            <div class="tab-content">
+                <div id="pending" class="tab-panel active">
+                    <div class="orders-grid" id="pendingOrders">
+                        <div class="empty-state">
+                            <div class="empty-icon">📋</div>
+                            <h3>Nenhum pedido novo</h3>
+                            <p>Os novos pedidos aparecerão aqui automaticamente</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="preparing" class="tab-panel">
+                    <div class="orders-grid" id="preparingOrders">
+                        <div class="empty-state">
+                            <div class="empty-icon">👨‍🍳</div>
+                            <h3>Nenhum pedido em preparo</h3>
+                            <p>Pedidos sendo preparados aparecerão aqui</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="completed" class="tab-panel">
+                    <div class="orders-grid" id="completedOrders">
+                        <div class="empty-state">
+                            <div class="empty-icon">✅</div>
+                            <h3>Nenhum pedido finalizado</h3>
+                            <p>Pedidos prontos para entrega aparecerão aqui</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="delivered" class="tab-panel">
+                    <div class="orders-grid" id="deliveredOrders">
+                        <div class="empty-state">
+                            <div class="empty-icon">🚚</div>
+                            <h3>Nenhuma entrega hoje</h3>
+                            <p>Pedidos entregues aparecerão aqui</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        let orders = [];
+        let soundEnabled = true;
+        let currentTab = 'pending';
+
+        // Simular dados de exemplo
+        const sampleOrders = [
+            {
+                id: 'DELMONTE_1757123456',
+                customer: {
+                    name: 'João Silva',
+                    email: 'joao@email.com',
+                    phone: '(21) 99999-9999',
+                    address: {
+                        street: 'Rua das Flores, 123',
+                        neighborhood: 'Centro',
+                        city: 'Rio de Janeiro',
+                        cep: '20000-000'
+                    }
+                },
+                items: [
+                    { name: 'Pizza Margherita', quantity: 1, price: 35.00 },
+                    { name: 'Refrigerante Lata', quantity: 2, price: 5.00 }
+                ],
+                subtotal: 45.00,
+                deliveryFee: 5.00,
+                total: 50.00,
+                paymentMethod: 'PIX',
+                paymentStatus: 'PAID',
+                status: 'pending',
+                createdAt: new Date(),
+                paidAt: new Date()
+            }
+        ];
+
+        function loadOrders() {
+            // Em produção, isso faria uma requisição para a API
+            // Por enquanto, usar dados de exemplo
+            orders = [...sampleOrders];
+            renderOrders();
+            updateStats();
+        }
+
+        function renderOrders() {
+            const containers = {
+                pending: document.getElementById('pendingOrders'),
+                preparing: document.getElementById('preparingOrders'),
+                completed: document.getElementById('completedOrders'),
+                delivered: document.getElementById('deliveredOrders')
+            };
+
+            // Limpar containers
+            Object.values(containers).forEach(container => {
+                container.innerHTML = '';
+            });
+
+            // Filtrar e renderizar pedidos por status
+            ['pending', 'preparing', 'completed', 'delivered'].forEach(status => {
+                const statusOrders = orders.filter(order => order.status === status);
+                
+                if (statusOrders.length === 0) {
+                    containers[status].innerHTML = getEmptyState(status);
+                } else {
+                    statusOrders.forEach(order => {
+                        containers[status].appendChild(createOrderCard(order));
+                    });
+                }
+            });
+        }
+
+        function getEmptyState(status) {
+            const states = {
+                pending: { icon: '📋', title: 'Nenhum pedido novo', desc: 'Os novos pedidos aparecerão aqui automaticamente' },
+                preparing: { icon: '👨‍🍳', title: 'Nenhum pedido em preparo', desc: 'Pedidos sendo preparados aparecerão aqui' },
+                completed: { icon: '✅', title: 'Nenhum pedido finalizado', desc: 'Pedidos prontos para entrega aparecerão aqui' },
+                delivered: { icon: '🚚', title: 'Nenhuma entrega hoje', desc: 'Pedidos entregues aparecerão aqui' }
+            };
+
+            const state = states[status];
+            return `
+                <div class="empty-state">
+                    <div class="empty-icon">${state.icon}</div>
+                    <h3>${state.title}</h3>
+                    <p>${state.desc}</p>
+                </div>
+            `;
+        }
+
+        function createOrderCard(order) {
+            const card = document.createElement('div');
+            card.className = `order-card ${order.status}`;
+            
+            card.innerHTML = `
+                <div class="order-header">
+                    <div>
+                        <div class="order-id">#${order.id.split('_')[1]}</div>
+                        <div class="order-time">${formatTime(order.createdAt)}</div>
+                    </div>
+                    <div class="order-status status-${order.status}">
+                        ${getStatusText(order.status)}
+                    </div>
+                </div>
+
+                <div class="customer-info">
+                    <div class="customer-name">👤 ${order.customer.name}</div>
+                    <div class="customer-details">
+                        📞 ${order.customer.phone}<br>
+                        📧 ${order.customer.email}<br>
+                        📍 ${order.customer.address.street}<br>
+                        ${order.customer.address.neighborhood}, ${order.customer.address.city}<br>
+                        CEP: ${order.customer.address.cep}
+                    </div>
+                </div>
+
+                <div class="order-items">
+                    <div class="items-title">🍕 Itens do Pedido:</div>
+                    ${order.items.map(item => `
+                        <div class="item">
+                            <div>
+                                <div class="item-name">${item.name}</div>
+                                <div class="item-details">Qtd: ${item.quantity}</div>
+                            </div>
+                            <div class="item-price">R$ ${(item.price * item.quantity).toFixed(2)}</div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="order-total">
+                    <div class="total-breakdown">
+                        Subtotal: R$ ${order.subtotal.toFixed(2)}<br>
+                        Taxa de entrega: R$ ${order.deliveryFee.toFixed(2)}
+                    </div>
+                    <div class="total-final">Total: R$ ${order.total.toFixed(2)}</div>
+                </div>
+
+                <div class="payment-info">
+                    <div class="payment-status">💳 Pagamento Confirmado</div>
+                    <div class="payment-method">
+                        Método: ${order.paymentMethod}<br>
+                        Confirmado em: ${formatTime(order.paidAt)}
+                    </div>
+                </div>
+
+                <div class="order-actions">
+                    ${getActionButtons(order)}
+                </div>
+            `;
+
+            return card;
+        }
+
+        function getStatusText(status) {
+            const texts = {
+                pending: 'Novo Pedido',
+                preparing: 'Preparando',
+                completed: 'Pronto',
+                delivered: 'Entregue'
+            };
+            return texts[status] || status;
+        }
+
+        function getActionButtons(order) {
+            switch (order.status) {
+                case 'pending':
+                    return `
+                        <button class="action-btn btn-start" onclick="updateOrderStatus('${order.id}', 'preparing')">
+                            👨‍🍳 Iniciar Preparo
+                        </button>
+                        <button class="action-btn btn-print" onclick="printOrder('${order.id}')">
+                            🖨️ Imprimir
+                        </button>
+                    `;
+                case 'preparing':
+                    return `
+                        <button class="action-btn btn-ready" onclick="updateOrderStatus('${order.id}', 'completed')">
+                            ✅ Marcar Pronto
+                        </button>
+                        <button class="action-btn btn-print" onclick="printOrder('${order.id}')">
+                            🖨️ Imprimir
+                        </button>
+                    `;
+                case 'completed':
+                    return `
+                        <button class="action-btn btn-delivered" onclick="updateOrderStatus('${order.id}', 'delivered')">
+                            🚚 Marcar Entregue
+                        </button>
+                        <button class="action-btn btn-print" onclick="printOrder('${order.id}')">
+                            🖨️ Imprimir
+                        </button>
+                    `;
+                case 'delivered':
+                    return `
+                        <button class="action-btn btn-print" onclick="printOrder('${order.id}')">
+                            🖨️ Reimprimir
+                        </button>
+                    `;
+                default:
+                    return '';
+            }
+        }
+
+        function updateOrderStatus(orderId, newStatus) {
+            const order = orders.find(o => o.id === orderId);
+            if (order) {
+                order.status = newStatus;
+                renderOrders();
+                updateStats();
+                showNotification(`Pedido #${orderId.split('_')[1]} atualizado para ${getStatusText(newStatus)}`);
+                
+                if (soundEnabled) {
+                    playNotificationSound();
+                }
+            }
+        }
+
+        function printOrder(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (order) {
+                // Criar janela de impressão
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(generatePrintHTML(order));
+                printWindow.document.close();
+                printWindow.print();
+            }
+        }
+
+        function generatePrintHTML(order) {
+            return `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Pedido #${order.id.split('_')[1]}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                        .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+                        .section { margin-bottom: 15px; }
+                        .items { border-collapse: collapse; width: 100%; }
+                        .items td, .items th { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        .total { font-weight: bold; font-size: 1.2em; text-align: center; margin-top: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>🍕 DEL MONTE PIZZARIA</h1>
+                        <h2>Pedido #${order.id.split('_')[1]}</h2>
+                        <p>${formatTime(order.createdAt)}</p>
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Cliente:</h3>
+                        <p><strong>${order.customer.name}</strong></p>
+                        <p>📞 ${order.customer.phone}</p>
+                        <p>📧 ${order.customer.email}</p>
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Endereço de Entrega:</h3>
+                        <p>${order.customer.address.street}</p>
+                        <p>${order.customer.address.neighborhood}, ${order.customer.address.city}</p>
+                        <p>CEP: ${order.customer.address.cep}</p>
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Itens:</h3>
+                        <table class="items">
+                            <tr><th>Item</th><th>Qtd</th><th>Preço Unit.</th><th>Total</th></tr>
+                            ${order.items.map(item => `
+                                <tr>
+                                    <td>${item.name}</td>
+                                    <td>${item.quantity}</td>
+                                    <td>R$ ${item.price.toFixed(2)}</td>
+                                    <td>R$ ${(item.price * item.quantity).toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                        </table>
+                    </div>
+                    
+                    <div class="total">
+                        <p>Subtotal: R$ ${order.subtotal.toFixed(2)}</p>
+                        <p>Taxa de entrega: R$ ${order.deliveryFee.toFixed(2)}</p>
+                        <p><strong>TOTAL: R$ ${order.total.toFixed(2)}</strong></p>
+                        <p>Pagamento: ${order.paymentMethod} - CONFIRMADO</p>
+                    </div>
+                </body>
+                </html>
+            `;
+        }
+
+        function switchTab(tab) {
+            // Atualizar botões
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Atualizar painéis
+            document.querySelectorAll('.tab-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            document.getElementById(tab).classList.add('active');
+
+            currentTab = tab;
+        }
+
+        function updateStats() {
+            const pending = orders.filter(o => o.status === 'pending').length;
+            const preparing = orders.filter(o => o.status === 'preparing').length;
+            const today = orders.filter(o => isToday(o.createdAt)).length;
+            const todayRevenue = orders
+                .filter(o => isToday(o.createdAt) && o.paymentStatus === 'PAID')
+                .reduce((sum, o) => sum + o.total, 0);
+
+            document.getElementById('pendingCount').textContent = pending;
+            document.getElementById('preparingCount').textContent = preparing;
+            document.getElementById('todayCount').textContent = today;
+            document.getElementById('todayRevenue').textContent = `R$ ${todayRevenue.toFixed(2)}`;
+        }
+
+        function isToday(date) {
+            const today = new Date();
+            const checkDate = new Date(date);
+            return checkDate.toDateString() === today.toDateString();
+        }
+
+        function formatTime(date) {
+            return new Date(date).toLocaleString('pt-BR');
+        }
+
+        function refreshOrders() {
+            const btn = event.target;
+            btn.innerHTML = '🔄 <span class="loading"></span>';
+            btn.disabled = true;
+
+            // Simular busca de novos pedidos da API
+            setTimeout(() => {
+                loadOrders();
+                btn.innerHTML = '🔄 Atualizar';
+                btn.disabled = false;
+                showNotification('Pedidos atualizados!');
+            }, 1500);
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('soundToggle');
+            btn.textContent = soundEnabled ? '🔊 Som ON' : '🔇 Som OFF';
+            btn.style.background = soundEnabled ? '#17a2b8' : '#6c757d';
+        }
+
+        function playNotificationSound() {
+            // Criar beep simples
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.2);
+        }
+
+        function showNotification(message, isError = false) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${isError ? 'error' : ''} show`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Simular chegada de novos pedidos
+        function simulateNewOrder() {
+            const newOrder = {
+                id: `DELMONTE_${Date.now()}`,
+                customer: {
+                    name: 'Cliente Teste',
+                    email: 'teste@email.com',
+                    phone: '(21) 98888-8888',
+                    address: {
+                        street: 'Rua Teste, 456',
+                        neighborhood: 'Copacabana',
+                        city: 'Rio de Janeiro',
+                        cep: '22000-000'
+                    }
+                },
+                items: [
+                    { name: 'Pizza Pepperoni', quantity: 1, price: 42.00 }
+                ],
+                subtotal: 42.00,
+                deliveryFee: 5.00,
+                total: 47.00,
+                paymentMethod: 'Cartão de Crédito',
+                paymentStatus: 'PAID',
+                status: 'pending',
+                createdAt: new Date(),
+                paidAt: new Date()
+            };
+
+            orders.unshift(newOrder);
+            renderOrders();
+            updateStats();
+            showNotification(`Novo pedido recebido! #${newOrder.id.split('_')[1]}`);
+            
+            if (soundEnabled) {
+                playNotificationSound();
+            }
+        }
+
+        // Função para receber pedidos confirmados do sistema de pagamento
+        function receiveConfirmedOrder(orderData) {
+            const order = {
+                id: orderData.reference_id || `DELMONTE_${Date.now()}`,
+                customer: {
+                    name: orderData.customer?.name || 'Cliente',
+                    email: orderData.customer?.email || '',
+                    phone: orderData.customer?.phone || '',
+                    address: orderData.delivery_address || {}
+                },
+                items: orderData.items || [],
+                subtotal: (orderData.total_amount - orderData.delivery_fee) / 100 || 0,
+                deliveryFee: orderData.delivery_fee / 100 || 0,
+                total: orderData.total_amount / 100 || 0,
+                paymentMethod: orderData.payment_method || 'PIX',
+                paymentStatus: 'PAID',
+                status: 'pending',
+                createdAt: new Date(),
+                paidAt: new Date()
+            };
+
+            orders.unshift(order);
+            renderOrders();
+            updateStats();
+            showNotification(`Novo pedido confirmado! #${order.id.split('_')[1]}`);
+            
+            if (soundEnabled) {
+                playNotificationSound();
+            }
+        }
+
+        // Atualização automática a cada 30 segundos
+        function startAutoRefresh() {
+            setInterval(async () => {
+                try {
+                    // Em produção, fazer requisição para API buscar novos pedidos
+                    // const response = await fetch('/api/pedidos/novos');
+                    // const newOrders = await response.json();
+                    // ... processar novos pedidos
+                    
+                    console.log('Verificando novos pedidos...');
+                } catch (error) {
+                    console.error('Erro ao buscar novos pedidos:', error);
+                }
+            }, 30000);
+        }
+
+        // Inicialização
+        window.addEventListener('load', function() {
+            loadOrders();
+            startAutoRefresh();
+            
+            // Simular novo pedido após 5 segundos (remover em produção)
+            setTimeout(simulateNewOrder, 5000);
+        });
+
+        // Escutar mensagens do sistema de pagamento (quando implementado)
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'NEW_CONFIRMED_ORDER') {
+                receiveConfirmedOrder(event.data.order);
+            }
+        });
+
+        // Atualização em tempo real via WebSocket (para implementar futuramente)
+        function connectWebSocket() {
+            // const ws = new WebSocket('ws://localhost:5000/ws/pedidos');
+            // ws.onmessage = function(event) {
+            //     const data = JSON.parse(event.data);
+            //     if (data.type === 'NEW_ORDER') {
+            //         receiveConfirmedOrder(data.order);
+            //     }
+            // };
+        }
+    </script>
+</body>
+</html>

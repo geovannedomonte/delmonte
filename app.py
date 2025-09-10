@@ -26,6 +26,191 @@ else:
 # ROTAS PARA SERVIR ARQUIVOS HTML
 
 
+# Base de dados simples em memória (em produção, usar banco de dados real)
+pedidos_confirmados = []
+
+
+@app.route("/pedidos.html")
+def pedidos_page():
+    """Serve a página de gestão de pedidos"""
+    return send_from_directory('.', 'pedidos.html')
+
+
+@app.route("/api/pedidos", methods=["GET"])
+def listar_pedidos():
+    """Lista todos os pedidos confirmados"""
+    try:
+        return jsonify({
+            "sucesso": True,
+            "pedidos": pedidos_confirmados
+        }), 200
+    except Exception as e:
+        return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
+
+
+@app.route("/api/pedidos/<order_id>/status", methods=["PUT"])
+def atualizar_status_pedido(order_id):
+    """Atualiza o status de um pedido (pending -> preparing -> completed -> delivered)"""
+    try:
+        dados = request.json
+        novo_status = dados.get("status")
+
+        if novo_status not in ["pending", "preparing", "completed", "delivered"]:
+            return jsonify({"erro": "Status inválido"}), 400
+
+        # Encontra o pedido
+        pedido = next(
+            (p for p in pedidos_confirmados if p["id"] == order_id), None)
+        if not pedido:
+            return jsonify({"erro": "Pedido não encontrado"}), 404
+
+        # Atualiza status
+        pedido["status"] = novo_status
+        pedido["updated_at"] = datetime.now().isoformat()
+
+        return jsonify({
+            "sucesso": True,
+            "pedido": pedido,
+            "mensagem": f"Status atualizado para {novo_status}"
+        }), 200
+
+    except Exception as e:
+        return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
+
+
+@app.route("/api/pedidos/stats", methods=["GET"])
+def estatisticas_pedidos():
+    """Retorna estatísticas dos pedidos"""
+    try:
+        hoje = datetime.now().date()
+
+        # Contadores
+        total_hoje = len([p for p in pedidos_confirmados
+                         if datetime.fromisoformat(p["created_at"]).date() == hoje])
+
+        pendentes = len(
+            [p for p in pedidos_confirmados if p["status"] == "pending"])
+        preparando = len(
+            [p for p in pedidos_confirmados if p["status"] == "preparing"])
+
+        # Receita do dia
+        receita_hoje = sum(p["total"] for p in pedidos_confirmados
+                           if datetime.fromisoformat(p["created_at"]).date() == hoje)
+
+        return jsonify({
+            "sucesso": True,
+            "stats": {
+                "pedidos_hoje": total_hoje,
+                "pendentes": pendentes,
+                "preparando": preparando,
+                "receita_hoje": receita_hoje
+            }
+        }), 200
+
+    except Exception as e:
+        return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
+
+
+def processar_pedido_confirmado(order_data, payment_method, payment_status):
+    """Processa um pedido quando o pagamento é confirmado"""
+    try:
+        # Criar objeto do pedido
+        pedido = {
+            "id": order_data.get("reference_id", f"DELMONTE_{int(datetime.now().timestamp())}"),
+            "customer": {
+                "name": order_data.get("customer", {}).get("name", "Cliente"),
+                "email": order_data.get("customer", {}).get("email", ""),
+                "phone": order_data.get("customer", {}).get("phone", ""),
+                "tax_id": order_data.get("customer", {}).get("tax_id", "")
+            },
+            "delivery_address": order_data.get("delivery_address", {}),
+            "items": order_data.get("items", []),
+            "subtotal": (order_data.get("total_amount", 0) - order_data.get("delivery_fee", 0)) / 100,
+            "delivery_fee": order_data.get("delivery_fee", 0) / 100,
+            "total": order_data.get("total_amount", 0) / 100,
+            "payment_method": payment_method,
+            "payment_status": payment_status,
+            "status": "pending",  # Novo pedido sempre começa como pendente
+            "created_at": datetime.now().isoformat(),
+            "paid_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
+        }
+
+        # Adicionar à lista de pedidos confirmados
+        pedidos_confirmados.append(pedido)
+
+        print(f"✅ Novo pedido adicionado ao sistema: {pedido['id']}")
+        return True
+
+    except Exception as e:
+        print(f"❌ Erro ao processar pedido confirmado: {str(e)}")
+        return False
+
+# Modificar as funções de pagamento existentes para chamar processar_pedido_confirmado
+
+
+# Na função criar_pedido_pix(), após sucesso:
+# (Adicionar após a linha: return jsonify({...}), 201)
+"""
+# Salvar dados do pedido para quando o pagamento for confirmado
+pedido_pendente = {
+    "order_id": response_data.get("id"),
+    "order_data": dados,
+    "payment_method": "PIX"
+}
+# Em produção, salvar no banco de dados ou cache
+"""
+
+# Na função criar_pedido_cartao(), após sucesso:
+# (Adicionar após verificar se charge_status == "PAID")
+"""
+if charge_status == "PAID":
+    # Processar pedido confirmado
+    processar_pedido_confirmado(dados, payment_type.upper(), "PAID")
+    
+    return jsonify({...}), 201
+"""
+
+# Modificar a função webhook_pagbank para processar pedidos PIX confirmados:
+
+
+def webhook_pagbank_enhanced():
+    """Versão aprimorada do webhook para processar pedidos confirmados"""
+    try:
+        dados = request.json
+        print(f"Webhook recebido: {json.dumps(dados, indent=2)}")
+
+        if dados and dados.get("charges"):
+            charge = dados["charges"][0]
+            status = charge.get("status")
+            reference_id = dados.get("reference_id")
+            payment_method = charge.get(
+                "payment_method", {}).get("type", "UNKNOWN")
+
+            if status == "PAID":
+                print(
+                    f"✅ Pagamento confirmado para pedido {reference_id} via {payment_method}")
+
+                # Buscar dados do pedido (em produção, consultar banco de dados)
+                # Por enquanto, criar dados básicos
+                order_data = {
+                    "reference_id": reference_id,
+                    "customer": dados.get("customer", {}),
+                    "items": dados.get("items", []),
+                    "total_amount": sum(item.get("unit_amount", 0) * item.get("quantity", 0)
+                                        for item in dados.get("items", [])),
+                    "delivery_fee": 500  # R$ 5,00 em centavos
+                }
+
+                # Processar pedido confirmado
+                processar_pedido_confirmado(order_data, payment_method, "PAID")
+
+        return jsonify({"status": "webhook processado"}), 200
+    except Exception as e:
+        print(f"Erro no webhook: {str(e)}")
+        return jsonify({"erro": str(e)}), 500
+
+
 @app.route("/")
 def home_page():
     """Serve a página inicial (index.html)"""
