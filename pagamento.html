@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -223,8 +224,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .success-message {
@@ -294,17 +300,18 @@
             .payment-container {
                 padding: 1.5rem;
             }
-            
+
             .form-row {
                 grid-template-columns: 1fr;
             }
-            
+
             .payment-methods {
                 grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="payment-container">
@@ -328,13 +335,13 @@
                     <div class="payment-name">PIX</div>
                     <div class="payment-description">Pagamento instantâneo</div>
                 </div>
-                
+
                 <div class="payment-method" onclick="selectPaymentMethod('debit')">
                     <div class="payment-icon">💳</div>
                     <div class="payment-name">Cartão de Débito</div>
                     <div class="payment-description">À vista</div>
                 </div>
-                
+
                 <div class="payment-method" onclick="selectPaymentMethod('credit')">
                     <div class="payment-icon">💎</div>
                     <div class="payment-name">Cartão de Crédito</div>
@@ -371,7 +378,8 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Número do Cartão</label>
-                    <input type="text" class="form-input" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19">
+                    <input type="text" class="form-input" id="cardNumber" placeholder="1234 5678 9012 3456"
+                        maxlength="19">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -383,7 +391,7 @@
                         <input type="text" class="form-input" id="cardCvv" placeholder="123" maxlength="4">
                     </div>
                 </div>
-                
+
                 <div class="form-group" id="installmentsGroup" style="display: none;">
                     <label class="form-label">Parcelamento</label>
                     <select class="installments-select" id="installments">
@@ -437,7 +445,7 @@
         let paymentCheckInterval = null;
 
         // Carrega dados do pedido do localStorage
-        window.onload = function() {
+        window.onload = function () {
             const storedOrder = localStorage.getItem('currentOrder');
             if (storedOrder) {
                 orderData = JSON.parse(storedOrder);
@@ -451,10 +459,10 @@
         function displayOrderSummary() {
             const itemsContainer = document.getElementById('orderItems');
             const totalContainer = document.getElementById('orderTotal');
-            
+
             let html = '';
             let total = 0;
-            
+
             orderData.items.forEach(item => {
                 const itemTotal = (item.unit_amount / 100) * item.quantity;
                 total += itemTotal;
@@ -465,7 +473,7 @@
                     </div>
                 `;
             });
-            
+
             itemsContainer.innerHTML = html;
             totalContainer.textContent = `Total: R$ ${total.toFixed(2)}`;
         }
@@ -475,25 +483,25 @@
             document.querySelectorAll('.payment-method').forEach(el => {
                 el.classList.remove('selected');
             });
-            
+
             // Oculta todos os formulários
             document.querySelectorAll('.payment-form').forEach(el => {
                 el.classList.remove('active');
             });
-            
+
             // Seleciona novo método
             event.target.closest('.payment-method').classList.add('selected');
             selectedPaymentMethod = method;
-            
+
             if (method === 'pix') {
                 document.getElementById('pixForm').classList.add('active');
             } else if (method === 'debit' || method === 'credit') {
                 document.getElementById('cardForm').classList.add('active');
-                
+
                 // Mostra/oculta parcelamento baseado no método
                 const installmentsGroup = document.getElementById('installmentsGroup');
                 const payButton = document.getElementById('cardPayButton');
-                
+
                 if (method === 'credit') {
                     installmentsGroup.style.display = 'block';
                     payButton.textContent = 'Finalizar Pagamento no Crédito';
@@ -516,22 +524,22 @@
             const name = document.getElementById('pixName').value;
             const email = document.getElementById('pixEmail').value;
             const cpf = document.getElementById('pixCpf').value;
-            
+
             if (!name || !email || !cpf) {
                 showError('Por favor, preencha todos os campos');
                 return;
             }
-            
+
             if (cpf.length !== 11) {
                 showError('CPF deve ter 11 dígitos');
                 return;
             }
-            
+
             const button = event.target;
             const originalText = button.textContent;
             button.innerHTML = 'Processando... <span class="loading"></span>';
             button.disabled = true;
-            
+
             try {
                 const response = await fetch('/criar-pedido', {
                     method: 'POST',
@@ -547,248 +555,269 @@
                         }
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.sucesso && data.qr_code) {
+                    console.log("Dados do QR Code recebidos:", data.qr_code);
+
                     // Exibe QR Code
                     document.getElementById('qrContainer').classList.add('active');
-                    
+
                     // Gera QR Code
                     const canvas = document.getElementById('qrCodeCanvas');
                     const ctx = canvas.getContext('2d');
                     ctx.clearRect(0, 0, 250, 250);
-                    
-                    const qr = new QRCode(document.createElement('div'), {
-                        text: data.qr_code.qr_code_text,
-                        width: 250,
-                        height: 250
-                    });
-                    
-                    setTimeout(() => {
-                        const img = qr._el.querySelector('img');
-                        if (img) {
-                            ctx.drawImage(img, 0, 0, 250, 250);
-                        }
-                    }, 100);
-                    
+
+                    console.log("Tentando gerar QR Code com texto:", data.qr_code.qr_code_text);
+
+                    // Verificar se a biblioteca QRCode está carregada
+                    if (typeof QRCode === 'undefined') {
+                        console.error("Biblioteca QRCode não carregada!");
+                        showError('Erro ao carregar gerador de QR Code');
+                        return;
+                    }
+
+                    try {
+                        const qr = new QRCode(document.createElement('div'), {
+                            text: data.qr_code.qr_code_text,
+                            width: 250,
+                            height: 250
+                        });
+
+                        setTimeout(() => {
+                            const img = qr._el.querySelector('img');
+                            if (img) {
+                                console.log("QR Code gerado com sucesso");
+                                ctx.drawImage(img, 0, 0, 250, 250);
+                            } else {
+                                console.error("Imagem do QR Code não encontrada");
+                                // Fallback: mostrar apenas o código de texto
+                                document.getElementById('pixCodeText').textContent = data.qr_code.qr_code_text;
+                                showSuccess('Código PIX gerado! Copie o código abaixo.');
+                            }
+                        }, 500); // Aumentar timeout
+
+                    } catch (error) {
+                        console.error("Erro ao gerar QR Code:", error);
+                        // Fallback: mostrar apenas o código
+                        document.getElementById('pixCodeText').textContent = data.qr_code.qr_code_text;
+                        showSuccess('Código PIX gerado! Copie o código abaixo.');
+                    }
+
                     // Exibe código PIX
                     document.getElementById('pixCodeText').textContent = data.qr_code.qr_code_text;
-                    
+
                     // Inicia verificação de pagamento
                     startPaymentCheck(data.order_id);
-                    
-                    showSuccess('QR Code gerado! Escaneie para pagar ou copie o código PIX.');
+
+                    showSuccess('PIX gerado! Use o QR Code ou copie o código.');
                 } else {
+                    console.error("Erro na resposta:", data);
                     showError(data.erro || 'Erro ao gerar PIX');
                 }
-            } catch (error) {
-                showError('Erro de conexão: ' + error.message);
-            } finally {
-                button.textContent = originalText;
-                button.disabled = false;
             }
-        }
 
         async function processCardPayment() {
-            const holder = document.getElementById('cardHolder').value;
-            const number = document.getElementById('cardNumber').value.replace(/\s/g, '');
-            const expiry = document.getElementById('cardExpiry').value;
-            const cvv = document.getElementById('cardCvv').value;
-            const customerName = document.getElementById('cardCustomerName').value;
-            const email = document.getElementById('cardEmail').value;
-            const cpf = document.getElementById('cardCpf').value;
-            
-            if (!holder || !number || !expiry || !cvv || !customerName || !email || !cpf) {
-                showError('Por favor, preencha todos os campos');
-                return;
-            }
-            
-            if (cpf.length !== 11) {
-                showError('CPF deve ter 11 dígitos');
-                return;
-            }
-            
-            // Valida formato do cartão
-            if (number.length < 13 || number.length > 19) {
-                showError('Número do cartão inválido');
-                return;
-            }
-            
-            const [expMonth, expYear] = expiry.split('/');
-            if (!expMonth || !expYear || expMonth.length !== 2 || expYear.length !== 2) {
-                showError('Data de validade inválida (MM/AA)');
-                return;
-            }
-            
-            const button = event.target;
-            const originalText = button.textContent;
-            button.innerHTML = 'Processando... <span class="loading"></span>';
-            button.disabled = true;
-            
-            try {
-                const installments = selectedPaymentMethod === 'credit' ? 
-                    parseInt(document.getElementById('installments').value) : 1;
-                
-                const paymentData = {
-                    ...orderData,
-                    customer: {
-                        name: customerName,
-                        email: email,
-                        tax_id: cpf
-                    },
-                    card_data: {
-                        holder: holder,
-                        number: number,
-                        exp_month: expMonth,
-                        exp_year: '20' + expYear,
-                        security_code: cvv
-                    },
-                    payment_type: selectedPaymentMethod,
-                    installments: installments
-                };
-                
-                const response = await fetch('/criar-pedido-cartao', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(paymentData)
-                });
-                
-                const data = await response.json();
-                
-                if (data.sucesso) {
-                    showSuccess('Pagamento aprovado! Redirecionando para gestão de pedidos...');
-                    
-                    // Enviar dados do pedido para a página de pedidos
-                    const pedidoCompleto = {
-                        ...orderData,
-                        order_id: data.order_id,
-                        payment_method: selectedPaymentMethod.toUpperCase(),
-                        payment_status: 'PAID',
-                        confirmed_at: new Date().toISOString()
-                    };
-                    
-                    // Limpar dados temporários
-                    localStorage.removeItem('currentOrder');
-                    
-                    setTimeout(() => {
-                        // Abrir página de pedidos em nova aba (para equipe da cozinha)
-                        window.open('pedidos.html', '_blank');
-                        
-                        // Redirecionar cliente para página inicial
-                        window.location.href = 'index.html';
-                    }, 3000);
-                } else {
-                    showError(data.erro || 'Pagamento recusado');
+                const holder = document.getElementById('cardHolder').value;
+                const number = document.getElementById('cardNumber').value.replace(/\s/g, '');
+                const expiry = document.getElementById('cardExpiry').value;
+                const cvv = document.getElementById('cardCvv').value;
+                const customerName = document.getElementById('cardCustomerName').value;
+                const email = document.getElementById('cardEmail').value;
+                const cpf = document.getElementById('cardCpf').value;
+
+                if (!holder || !number || !expiry || !cvv || !customerName || !email || !cpf) {
+                    showError('Por favor, preencha todos os campos');
+                    return;
                 }
-            } catch (error) {
-                showError('Erro de conexão: ' + error.message);
-            } finally {
-                button.textContent = originalText;
-                button.disabled = false;
-            }
-        }
 
-        function copyPixCode() {
-            const pixCode = document.getElementById('pixCodeText').textContent;
-            navigator.clipboard.writeText(pixCode).then(() => {
-                const btn = event.target;
-                const originalText = btn.textContent;
-                btn.textContent = '✓ Copiado!';
-                btn.style.background = '#28a745';
-                
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.style.background = '';
-                }, 2000);
-            });
-        }
+                if (cpf.length !== 11) {
+                    showError('CPF deve ter 11 dígitos');
+                    return;
+                }
 
-        async function startPaymentCheck(orderId) {
-            paymentCheckInterval = setInterval(async () => {
+                // Valida formato do cartão
+                if (number.length < 13 || number.length > 19) {
+                    showError('Número do cartão inválido');
+                    return;
+                }
+
+                const [expMonth, expYear] = expiry.split('/');
+                if (!expMonth || !expYear || expMonth.length !== 2 || expYear.length !== 2) {
+                    showError('Data de validade inválida (MM/AA)');
+                    return;
+                }
+
+                const button = event.target;
+                const originalText = button.textContent;
+                button.innerHTML = 'Processando... <span class="loading"></span>';
+                button.disabled = true;
+
                 try {
-                    const response = await fetch(`/status-pedido/${orderId}`);
+                    const installments = selectedPaymentMethod === 'credit' ?
+                        parseInt(document.getElementById('installments').value) : 1;
+
+                    const paymentData = {
+                        ...orderData,
+                        customer: {
+                            name: customerName,
+                            email: email,
+                            tax_id: cpf
+                        },
+                        card_data: {
+                            holder: holder,
+                            number: number,
+                            exp_month: expMonth,
+                            exp_year: '20' + expYear,
+                            security_code: cvv
+                        },
+                        payment_type: selectedPaymentMethod,
+                        installments: installments
+                    };
+
+                    const response = await fetch('/criar-pedido-cartao', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(paymentData)
+                    });
+
                     const data = await response.json();
-                    
-                    if (data.status === 'PAID') {
-                        clearInterval(paymentCheckInterval);
-                        showSuccess('Pagamento confirmado! Redirecionando para gestão de pedidos...');
-                        
+
+                    if (data.sucesso) {
+                        showSuccess('Pagamento aprovado! Redirecionando para gestão de pedidos...');
+
                         // Enviar dados do pedido para a página de pedidos
                         const pedidoCompleto = {
                             ...orderData,
-                            order_id: orderId,
-                            payment_method: 'PIX',
+                            order_id: data.order_id,
+                            payment_method: selectedPaymentMethod.toUpperCase(),
                             payment_status: 'PAID',
                             confirmed_at: new Date().toISOString()
                         };
-                        
+
                         // Limpar dados temporários
                         localStorage.removeItem('currentOrder');
-                        
-                        // Redirecionar para página de pedidos após 3 segundos
+
                         setTimeout(() => {
                             // Abrir página de pedidos em nova aba (para equipe da cozinha)
                             window.open('pedidos.html', '_blank');
-                            
+
                             // Redirecionar cliente para página inicial
                             window.location.href = 'index.html';
                         }, 3000);
-                        
-                    } else if (data.status === 'DECLINED' || data.status === 'CANCELED') {
-                        clearInterval(paymentCheckInterval);
-                        showError('Pagamento não foi processado');
+                    } else {
+                        showError(data.erro || 'Pagamento recusado');
                     }
                 } catch (error) {
-                    console.error('Erro ao verificar status:', error);
+                    showError('Erro de conexão: ' + error.message);
+                } finally {
+                    button.textContent = originalText;
+                    button.disabled = false;
                 }
-            }, 5000);
-        }
-
-        function showSuccess(message) {
-            const successDiv = document.getElementById('successMessage');
-            successDiv.textContent = message;
-            successDiv.style.display = 'block';
-            document.getElementById('errorMessage').style.display = 'none';
-        }
-
-        function showError(message) {
-            const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            document.getElementById('successMessage').style.display = 'none';
-        }
-
-        // Formatação de campos
-        document.getElementById('cardNumber').addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\s/g, '');
-            let formattedValue = value.replace(/(.{4})/g, '$1 ').trim();
-            if (formattedValue.length > 19) {
-                formattedValue = formattedValue.substr(0, 19);
             }
-            e.target.value = formattedValue;
-        });
 
-        document.getElementById('cardExpiry').addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.length >= 2) {
-                value = value.substr(0, 2) + '/' + value.substr(2, 2);
+            function copyPixCode() {
+                const pixCode = document.getElementById('pixCodeText').textContent;
+                navigator.clipboard.writeText(pixCode).then(() => {
+                    const btn = event.target;
+                    const originalText = btn.textContent;
+                    btn.textContent = '✓ Copiado!';
+                    btn.style.background = '#28a745';
+
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.style.background = '';
+                    }, 2000);
+                });
             }
-            e.target.value = value;
-        });
 
-        document.getElementById('cardCvv').addEventListener('input', function(e) {
-            e.target.value = e.target.value.replace(/\D/g, '');
-        });
+            async function startPaymentCheck(orderId) {
+                paymentCheckInterval = setInterval(async () => {
+                    try {
+                        const response = await fetch(`/status-pedido/${orderId}`);
+                        const data = await response.json();
 
-        // Formatação CPF
-        document.querySelectorAll('#pixCpf, #cardCpf').forEach(input => {
-            input.addEventListener('input', function(e) {
+                        if (data.status === 'PAID') {
+                            clearInterval(paymentCheckInterval);
+                            showSuccess('Pagamento confirmado! Redirecionando para gestão de pedidos...');
+
+                            // Enviar dados do pedido para a página de pedidos
+                            const pedidoCompleto = {
+                                ...orderData,
+                                order_id: orderId,
+                                payment_method: 'PIX',
+                                payment_status: 'PAID',
+                                confirmed_at: new Date().toISOString()
+                            };
+
+                            // Limpar dados temporários
+                            localStorage.removeItem('currentOrder');
+
+                            // Redirecionar para página de pedidos após 3 segundos
+                            setTimeout(() => {
+                                // Abrir página de pedidos em nova aba (para equipe da cozinha)
+                                window.open('pedidos.html', '_blank');
+
+                                // Redirecionar cliente para página inicial
+                                window.location.href = 'index.html';
+                            }, 3000);
+
+                        } else if (data.status === 'DECLINED' || data.status === 'CANCELED') {
+                            clearInterval(paymentCheckInterval);
+                            showError('Pagamento não foi processado');
+                        }
+                    } catch (error) {
+                        console.error('Erro ao verificar status:', error);
+                    }
+                }, 5000);
+            }
+
+            function showSuccess(message) {
+                const successDiv = document.getElementById('successMessage');
+                successDiv.textContent = message;
+                successDiv.style.display = 'block';
+                document.getElementById('errorMessage').style.display = 'none';
+            }
+
+            function showError(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                document.getElementById('successMessage').style.display = 'none';
+            }
+
+            // Formatação de campos
+            document.getElementById('cardNumber').addEventListener('input', function (e) {
+                let value = e.target.value.replace(/\s/g, '');
+                let formattedValue = value.replace(/(.{4})/g, '$1 ').trim();
+                if (formattedValue.length > 19) {
+                    formattedValue = formattedValue.substr(0, 19);
+                }
+                e.target.value = formattedValue;
+            });
+
+            document.getElementById('cardExpiry').addEventListener('input', function (e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length >= 2) {
+                    value = value.substr(0, 2) + '/' + value.substr(2, 2);
+                }
+                e.target.value = value;
+            });
+
+            document.getElementById('cardCvv').addEventListener('input', function (e) {
                 e.target.value = e.target.value.replace(/\D/g, '');
             });
-        });
+
+            // Formatação CPF
+            document.querySelectorAll('#pixCpf, #cardCpf').forEach(input => {
+                input.addEventListener('input', function (e) {
+                    e.target.value = e.target.value.replace(/\D/g, '');
+                });
+            });
     </script>
 </body>
+
 </html>
