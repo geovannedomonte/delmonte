@@ -394,7 +394,7 @@ def criar_pedido_cartao():
         if payment_type == "debit":
             installments = 1
             card_type = "DEBIT_CARD"
-            authentication_method = {"type": "THREEDS"}  # 🔑 necessário
+            authentication = {"type": "THREEDS"}  # 🔑 necessário
         else:
             card_type = "CREDIT_CARD"
             authentication_method = None
@@ -445,9 +445,7 @@ def criar_pedido_cartao():
                             },
                             "store": False
                         },
-                        "authentication_method": {
-                            "type": "THREEDS"
-                        }
+                        **({"authentication": authentication} if authentication else {})
                     }
                 }
             ],
