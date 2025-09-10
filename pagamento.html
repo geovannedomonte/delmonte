@@ -616,84 +616,145 @@
                     console.error("Erro na resposta:", data);
                     showError(data.erro || 'Erro ao gerar PIX');
                 }
+            } catch (error) {
+                showError('Erro de conexão: ' + error.message);
+            } finally {
+                button.textContent = originalText;
+                button.disabled = false;
             }
+        }
 
         async function processCardPayment() {
-                const holder = document.getElementById('cardHolder').value;
-                const number = document.getElementById('cardNumber').value.replace(/\s/g, '');
-                const expiry = document.getElementById('cardExpiry').value;
-                const cvv = document.getElementById('cardCvv').value;
-                const customerName = document.getElementById('cardCustomerName').value;
-                const email = document.getElementById('cardEmail').value;
-                const cpf = document.getElementById('cardCpf').value;
+            const holder = document.getElementById('cardHolder').value;
+            const number = document.getElementById('cardNumber').value.replace(/\s/g, '');
+            const expiry = document.getElementById('cardExpiry').value;
+            const cvv = document.getElementById('cardCvv').value;
+            const customerName = document.getElementById('cardCustomerName').value;
+            const email = document.getElementById('cardEmail').value;
+            const cpf = document.getElementById('cardCpf').value;
 
-                if (!holder || !number || !expiry || !cvv || !customerName || !email || !cpf) {
-                    showError('Por favor, preencha todos os campos');
-                    return;
-                }
+            if (!holder || !number || !expiry || !cvv || !customerName || !email || !cpf) {
+                showError('Por favor, preencha todos os campos');
+                return;
+            }
 
-                if (cpf.length !== 11) {
-                    showError('CPF deve ter 11 dígitos');
-                    return;
-                }
+            if (cpf.length !== 11) {
+                showError('CPF deve ter 11 dígitos');
+                return;
+            }
 
-                // Valida formato do cartão
-                if (number.length < 13 || number.length > 19) {
-                    showError('Número do cartão inválido');
-                    return;
-                }
+            // Valida formato do cartão
+            if (number.length < 13 || number.length > 19) {
+                showError('Número do cartão inválido');
+                return;
+            }
 
-                const [expMonth, expYear] = expiry.split('/');
-                if (!expMonth || !expYear || expMonth.length !== 2 || expYear.length !== 2) {
-                    showError('Data de validade inválida (MM/AA)');
-                    return;
-                }
+            const [expMonth, expYear] = expiry.split('/');
+            if (!expMonth || !expYear || expMonth.length !== 2 || expYear.length !== 2) {
+                showError('Data de validade inválida (MM/AA)');
+                return;
+            }
 
-                const button = event.target;
-                const originalText = button.textContent;
-                button.innerHTML = 'Processando... <span class="loading"></span>';
-                button.disabled = true;
+            const button = event.target;
+            const originalText = button.textContent;
+            button.innerHTML = 'Processando... <span class="loading"></span>';
+            button.disabled = true;
 
-                try {
-                    const installments = selectedPaymentMethod === 'credit' ?
-                        parseInt(document.getElementById('installments').value) : 1;
+            try {
+                const installments = selectedPaymentMethod === 'credit' ?
+                    parseInt(document.getElementById('installments').value) : 1;
 
-                    const paymentData = {
+                const paymentData = {
+                    ...orderData,
+                    customer: {
+                        name: customerName,
+                        email: email,
+                        tax_id: cpf
+                    },
+                    card_data: {
+                        holder: holder,
+                        number: number,
+                        exp_month: expMonth,
+                        exp_year: '20' + expYear,
+                        security_code: cvv
+                    },
+                    payment_type: selectedPaymentMethod,
+                    installments: installments
+                };
+
+                const response = await fetch('/criar-pedido-cartao', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(paymentData)
+                });
+
+                const data = await response.json();
+
+                if (data.sucesso) {
+                    showSuccess('Pagamento aprovado! Redirecionando para gestão de pedidos...');
+
+                    // Enviar dados do pedido para a página de pedidos
+                    const pedidoCompleto = {
                         ...orderData,
-                        customer: {
-                            name: customerName,
-                            email: email,
-                            tax_id: cpf
-                        },
-                        card_data: {
-                            holder: holder,
-                            number: number,
-                            exp_month: expMonth,
-                            exp_year: '20' + expYear,
-                            security_code: cvv
-                        },
-                        payment_type: selectedPaymentMethod,
-                        installments: installments
+                        order_id: data.order_id,
+                        payment_method: selectedPaymentMethod.toUpperCase(),
+                        payment_status: 'PAID',
+                        confirmed_at: new Date().toISOString()
                     };
 
-                    const response = await fetch('/criar-pedido-cartao', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(paymentData)
-                    });
+                    // Limpar dados temporários
+                    localStorage.removeItem('currentOrder');
 
+                    setTimeout(() => {
+                        // Abrir página de pedidos em nova aba (para equipe da cozinha)
+                        window.open('pedidos.html', '_blank');
+
+                        // Redirecionar cliente para página inicial
+                        window.location.href = 'index.html';
+                    }, 3000);
+                } else {
+                    showError(data.erro || 'Pagamento recusado');
+                }
+            } catch (error) {
+                showError('Erro de conexão: ' + error.message);
+            } finally {
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        }
+
+        function copyPixCode() {
+            const pixCode = document.getElementById('pixCodeText').textContent;
+            navigator.clipboard.writeText(pixCode).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✓ Copiado!';
+                btn.style.background = '#28a745';
+
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '';
+                }, 2000);
+            });
+        }
+
+        async function startPaymentCheck(orderId) {
+            paymentCheckInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/status-pedido/${orderId}`);
                     const data = await response.json();
 
-                    if (data.sucesso) {
-                        showSuccess('Pagamento aprovado! Redirecionando para gestão de pedidos...');
+                    if (data.status === 'PAID') {
+                        clearInterval(paymentCheckInterval);
+                        showSuccess('Pagamento confirmado! Redirecionando para gestão de pedidos...');
 
                         // Enviar dados do pedido para a página de pedidos
                         const pedidoCompleto = {
                             ...orderData,
-                            order_id: data.order_id,
-                            payment_method: selectedPaymentMethod.toUpperCase(),
+                            order_id: orderId,
+                            payment_method: 'PIX',
                             payment_status: 'PAID',
                             confirmed_at: new Date().toISOString()
                         };
@@ -701,6 +762,7 @@
                         // Limpar dados temporários
                         localStorage.removeItem('currentOrder');
 
+                        // Redirecionar para página de pedidos após 3 segundos
                         setTimeout(() => {
                             // Abrir página de pedidos em nova aba (para equipe da cozinha)
                             window.open('pedidos.html', '_blank');
@@ -708,115 +770,59 @@
                             // Redirecionar cliente para página inicial
                             window.location.href = 'index.html';
                         }, 3000);
-                    } else {
-                        showError(data.erro || 'Pagamento recusado');
+
+                    } else if (data.status === 'DECLINED' || data.status === 'CANCELED') {
+                        clearInterval(paymentCheckInterval);
+                        showError('Pagamento não foi processado');
                     }
                 } catch (error) {
-                    showError('Erro de conexão: ' + error.message);
-                } finally {
-                    button.textContent = originalText;
-                    button.disabled = false;
+                    console.error('Erro ao verificar status:', error);
                 }
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        // Formatação de campos
+        document.getElementById('cardNumber').addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\s/g, '');
+            let formattedValue = value.replace(/(.{4})/g, '$1 ').trim();
+            if (formattedValue.length > 19) {
+                formattedValue = formattedValue.substr(0, 19);
             }
+            e.target.value = formattedValue;
+        });
 
-            function copyPixCode() {
-                const pixCode = document.getElementById('pixCodeText').textContent;
-                navigator.clipboard.writeText(pixCode).then(() => {
-                    const btn = event.target;
-                    const originalText = btn.textContent;
-                    btn.textContent = '✓ Copiado!';
-                    btn.style.background = '#28a745';
-
-                    setTimeout(() => {
-                        btn.textContent = originalText;
-                        btn.style.background = '';
-                    }, 2000);
-                });
+        document.getElementById('cardExpiry').addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length >= 2) {
+                value = value.substr(0, 2) + '/' + value.substr(2, 2);
             }
+            e.target.value = value;
+        });
 
-            async function startPaymentCheck(orderId) {
-                paymentCheckInterval = setInterval(async () => {
-                    try {
-                        const response = await fetch(`/status-pedido/${orderId}`);
-                        const data = await response.json();
+        document.getElementById('cardCvv').addEventListener('input', function (e) {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
 
-                        if (data.status === 'PAID') {
-                            clearInterval(paymentCheckInterval);
-                            showSuccess('Pagamento confirmado! Redirecionando para gestão de pedidos...');
-
-                            // Enviar dados do pedido para a página de pedidos
-                            const pedidoCompleto = {
-                                ...orderData,
-                                order_id: orderId,
-                                payment_method: 'PIX',
-                                payment_status: 'PAID',
-                                confirmed_at: new Date().toISOString()
-                            };
-
-                            // Limpar dados temporários
-                            localStorage.removeItem('currentOrder');
-
-                            // Redirecionar para página de pedidos após 3 segundos
-                            setTimeout(() => {
-                                // Abrir página de pedidos em nova aba (para equipe da cozinha)
-                                window.open('pedidos.html', '_blank');
-
-                                // Redirecionar cliente para página inicial
-                                window.location.href = 'index.html';
-                            }, 3000);
-
-                        } else if (data.status === 'DECLINED' || data.status === 'CANCELED') {
-                            clearInterval(paymentCheckInterval);
-                            showError('Pagamento não foi processado');
-                        }
-                    } catch (error) {
-                        console.error('Erro ao verificar status:', error);
-                    }
-                }, 5000);
-            }
-
-            function showSuccess(message) {
-                const successDiv = document.getElementById('successMessage');
-                successDiv.textContent = message;
-                successDiv.style.display = 'block';
-                document.getElementById('errorMessage').style.display = 'none';
-            }
-
-            function showError(message) {
-                const errorDiv = document.getElementById('errorMessage');
-                errorDiv.textContent = message;
-                errorDiv.style.display = 'block';
-                document.getElementById('successMessage').style.display = 'none';
-            }
-
-            // Formatação de campos
-            document.getElementById('cardNumber').addEventListener('input', function (e) {
-                let value = e.target.value.replace(/\s/g, '');
-                let formattedValue = value.replace(/(.{4})/g, '$1 ').trim();
-                if (formattedValue.length > 19) {
-                    formattedValue = formattedValue.substr(0, 19);
-                }
-                e.target.value = formattedValue;
-            });
-
-            document.getElementById('cardExpiry').addEventListener('input', function (e) {
-                let value = e.target.value.replace(/\D/g, '');
-                if (value.length >= 2) {
-                    value = value.substr(0, 2) + '/' + value.substr(2, 2);
-                }
-                e.target.value = value;
-            });
-
-            document.getElementById('cardCvv').addEventListener('input', function (e) {
+        // Formatação CPF
+        document.querySelectorAll('#pixCpf, #cardCpf').forEach(input => {
+            input.addEventListener('input', function (e) {
                 e.target.value = e.target.value.replace(/\D/g, '');
             });
-
-            // Formatação CPF
-            document.querySelectorAll('#pixCpf, #cardCpf').forEach(input => {
-                input.addEventListener('input', function (e) {
-                    e.target.value = e.target.value.replace(/\D/g, '');
-                });
-            });
+        });
     </script>
 </body>
 
