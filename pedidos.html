@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -390,8 +391,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .notification {
@@ -436,23 +442,24 @@
             .orders-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             .header {
                 flex-direction: column;
                 gap: 1rem;
                 text-align: center;
             }
-            
+
             .stats {
                 grid-template-columns: repeat(2, 1fr);
             }
-            
+
             .order-actions {
                 flex-direction: column;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
@@ -501,7 +508,7 @@
                     🚚 Entregues
                 </button>
             </div>
-            
+
             <div class="tab-content">
                 <div id="pending" class="tab-panel active">
                     <div class="orders-grid" id="pendingOrders">
@@ -512,7 +519,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div id="preparing" class="tab-panel">
                     <div class="orders-grid" id="preparingOrders">
                         <div class="empty-state">
@@ -522,7 +529,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div id="completed" class="tab-panel">
                     <div class="orders-grid" id="completedOrders">
                         <div class="empty-state">
@@ -532,7 +539,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div id="delivered" class="tab-panel">
                     <div class="orders-grid" id="deliveredOrders">
                         <div class="empty-state">
@@ -583,10 +590,21 @@
             }
         ];
 
-        function loadOrders() {
-            // Em produção, isso faria uma requisição para a API
-            // Por enquanto, usar dados de exemplo
-            orders = [...sampleOrders];
+        async function loadOrders() {
+            try {
+                const response = await fetch('/api/pedidos');
+                const data = await response.json();
+
+                if (data.sucesso) {
+                    orders = data.pedidos;
+                } else {
+                    console.error('Erro ao carregar pedidos:', data.erro);
+                    orders = [...sampleOrders]; // Fallback para dados de exemplo
+                }
+            } catch (error) {
+                console.error('Erro na requisição:', error);
+                orders = [...sampleOrders]; // Fallback para dados de exemplo
+            }
             renderOrders();
             updateStats();
         }
@@ -607,7 +625,7 @@
             // Filtrar e renderizar pedidos por status
             ['pending', 'preparing', 'completed', 'delivered'].forEach(status => {
                 const statusOrders = orders.filter(order => order.status === status);
-                
+
                 if (statusOrders.length === 0) {
                     containers[status].innerHTML = getEmptyState(status);
                 } else {
@@ -639,7 +657,7 @@
         function createOrderCard(order) {
             const card = document.createElement('div');
             card.className = `order-card ${order.status}`;
-            
+
             card.innerHTML = `
                 <div class="order-header">
                     <div>
@@ -756,7 +774,7 @@
                 renderOrders();
                 updateStats();
                 showNotification(`Pedido #${orderId.split('_')[1]} atualizado para ${getStatusText(newStatus)}`);
-                
+
                 if (soundEnabled) {
                     playNotificationSound();
                 }
@@ -876,18 +894,20 @@
             return new Date(date).toLocaleString('pt-BR');
         }
 
-        function refreshOrders() {
+        async function refreshOrders() {
             const btn = event.target;
             btn.innerHTML = '🔄 <span class="loading"></span>';
             btn.disabled = true;
 
-            // Simular busca de novos pedidos da API
-            setTimeout(() => {
-                loadOrders();
+            try {
+                await loadOrders(); // Usar a função loadOrders atualizada
+                showNotification('Pedidos atualizados!');
+            } catch (error) {
+                showNotification('Erro ao atualizar pedidos', true);
+            } finally {
                 btn.innerHTML = '🔄 Atualizar';
                 btn.disabled = false;
-                showNotification('Pedidos atualizados!');
-            }, 1500);
+            }
         }
 
         function toggleSound() {
@@ -902,13 +922,13 @@
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
-            
+
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
-            
+
             oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
             gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            
+
             oscillator.start();
             oscillator.stop(audioContext.currentTime + 0.2);
         }
@@ -917,7 +937,7 @@
             const notification = document.getElementById('notification');
             notification.textContent = message;
             notification.className = `notification ${isError ? 'error' : ''} show`;
-            
+
             setTimeout(() => {
                 notification.classList.remove('show');
             }, 3000);
@@ -955,7 +975,7 @@
             renderOrders();
             updateStats();
             showNotification(`Novo pedido recebido! #${newOrder.id.split('_')[1]}`);
-            
+
             if (soundEnabled) {
                 playNotificationSound();
             }
@@ -986,7 +1006,7 @@
             renderOrders();
             updateStats();
             showNotification(`Novo pedido confirmado! #${order.id.split('_')[1]}`);
-            
+
             if (soundEnabled) {
                 playNotificationSound();
             }
@@ -1000,7 +1020,7 @@
                     // const response = await fetch('/api/pedidos/novos');
                     // const newOrders = await response.json();
                     // ... processar novos pedidos
-                    
+
                     console.log('Verificando novos pedidos...');
                 } catch (error) {
                     console.error('Erro ao buscar novos pedidos:', error);
@@ -1009,16 +1029,16 @@
         }
 
         // Inicialização
-        window.addEventListener('load', function() {
+        window.addEventListener('load', function () {
             loadOrders();
             startAutoRefresh();
-            
+
             // Simular novo pedido após 5 segundos (remover em produção)
             setTimeout(simulateNewOrder, 5000);
         });
 
         // Escutar mensagens do sistema de pagamento (quando implementado)
-        window.addEventListener('message', function(event) {
+        window.addEventListener('message', function (event) {
             if (event.data.type === 'NEW_CONFIRMED_ORDER') {
                 receiveConfirmedOrder(event.data.order);
             }
@@ -1036,4 +1056,5 @@
         }
     </script>
 </body>
+
 </html>
