@@ -417,7 +417,7 @@ def criar_pedido_cartao():
         if payment_type == "debit":
             payment_method["authentication_method"] = {
                 "type": "THREEDS",
-                "id": f"auth_{int(datetime.now().timestamp())}"
+                "id": f"3ds_{int(datetime.now().timestamp())}_{payment_type}"
             }
 
         pedido = {
