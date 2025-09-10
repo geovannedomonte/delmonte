@@ -592,18 +592,21 @@
 
         async function loadOrders() {
             try {
+                console.log('Buscando pedidos da API...');
                 const response = await fetch('/api/pedidos');
                 const data = await response.json();
 
+                console.log('Resposta da API:', data);
+
                 if (data.sucesso) {
                     orders = data.pedidos;
-                    console.log(`Carregados ${data.pedidos.length} pedidos da ${data.storage}`);
+                    console.log(`Carregados ${data.pedidos.length} pedidos`);
                 } else {
-                    console.error('Erro ao carregar pedidos:', data.erro);
+                    console.error('Erro na API:', data.erro);
                     orders = [];
                 }
             } catch (error) {
-                console.error('Erro na requisição:', error);
+                console.error('Erro de conexão:', error);
                 orders = [];
             }
             renderOrders();
