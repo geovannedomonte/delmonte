@@ -383,8 +383,7 @@ def criar_pedido_cartao():
         total_amount = dados.get("total_amount", 0)
         if total_amount == 0:
             for item in dados.get("items", []):
-                total_amount += item.get("unit_amount", 0) * \
-                    item.get("quantity", 1)
+                total_amount += item.get("unit_amount", 0) * item.get("quantity", 1)
 
         # Determina o tipo de cartão
         payment_type = dados.get("payment_type", "credit")
@@ -394,10 +393,32 @@ def criar_pedido_cartao():
         if payment_type == "debit":
             installments = 1
             card_type = "DEBIT_CARD"
-            
         else:
             card_type = "CREDIT_CARD"
-        
+
+        # Construir payment_method baseado no tipo
+        payment_method = {
+            "type": card_type,
+            "installments": installments,
+            "capture": True,
+            "card": {
+                "number": card_data["number"],
+                "exp_month": card_data["exp_month"],
+                "exp_year": card_data["exp_year"],
+                "security_code": card_data["security_code"],
+                "holder": {
+                    "name": card_data["holder"]
+                },
+                "store": False
+            }
+        }
+
+        # Adicionar autenticação apenas para débito
+        if payment_type == "debit":
+            payment_method["authentication_method"] = {
+                "type": "THREEDS",
+                "id": f"auth_{int(datetime.now().timestamp())}"
+            }
 
         pedido = {
             "reference_id": dados.get("reference_id", f"DELMONTE_{int(datetime.now().timestamp())}"),
@@ -431,21 +452,7 @@ def criar_pedido_cartao():
                         "value": total_amount,
                         "currency": "BRL"
                     },
-                    "payment_method": {
-                        "type": card_type,
-                        "installments": installments,
-                        "capture": True,
-                        "card": {
-                            "number": card_data["number"],
-                            "exp_month": card_data["exp_month"],
-                            "exp_year": card_data["exp_year"],
-                            "security_code": card_data["security_code"],
-                            "holder": {
-                                "name": card_data["holder"]
-                            },
-                            "store": False
-                        }
-                    }
+                    "payment_method": payment_method
                 }
             ],
             "notification_urls": [WEBHOOK_URL]
@@ -457,13 +464,11 @@ def criar_pedido_cartao():
             "Accept": "application/json"
         }
 
-        print(
-            f"Enviando pedido de cartão para PagBank: {json.dumps(pedido, indent=2)}")
+        print(f"Enviando pedido de cartão para PagBank: {json.dumps(pedido, indent=2)}")
 
         response = requests.post(URL_API, json=pedido, headers=headers)
 
-        print(
-            f"Resposta PagBank (Cartão): {response.status_code} - {response.text}")
+        print(f"Resposta PagBank (Cartão): {response.status_code} - {response.text}")
 
         if response.status_code in [200, 201]:
             response_data = response.json()
@@ -471,10 +476,12 @@ def criar_pedido_cartao():
             # Verifica status do pagamento
             charge_status = "UNKNOWN"
             if "charges" in response_data and len(response_data["charges"]) > 0:
-                charge_status = response_data["charges"][0].get(
-                    "status", "UNKNOWN")
+                charge_status = response_data["charges"][0].get("status", "UNKNOWN")
 
             if charge_status == "PAID":
+                # Processar pedido confirmado
+                processar_pedido_confirmado(dados, payment_type.upper(), "PAID")
+                
                 return jsonify({
                     "sucesso": True,
                     "order_id": response_data.get("id"),
@@ -501,7 +508,6 @@ def criar_pedido_cartao():
     except Exception as e:
         print(f"Erro interno no pagamento com cartão: {str(e)}")
         return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
-
 
 @app.route("/status-pedido/<order_id>", methods=["GET"])
 def consultar_status(order_id):
