@@ -394,8 +394,10 @@ def criar_pedido_cartao():
         if payment_type == "debit":
             installments = 1
             card_type = "DEBIT_CARD"
+            authentication_method = {"type": "REDIRECT"}  # 🔑 necessário
         else:
             card_type = "CREDIT_CARD"
+            authentication_method = None
 
         pedido = {
             "reference_id": dados.get("reference_id", f"DELMONTE_{int(datetime.now().timestamp())}"),
@@ -442,7 +444,8 @@ def criar_pedido_cartao():
                                 "name": card_data["holder"]
                             },
                             "store": False
-                        }
+                        },
+                        **({"authentication_method": authentication_method} if authentication_method else {})
                     }
                 }
             ],
