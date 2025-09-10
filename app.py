@@ -5,22 +5,17 @@ import os
 from datetime import datetime, timedelta
 import json
 from dotenv import load_dotenv
-from pymongo import MongoClient
-from bson import ObjectId
 
 # Carrega variáveis de ambiente
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)  # Permite requisições do frontend
+CORS(app)
 
 # Configurações do PagBank
 PAGBANK_TOKEN = os.getenv("PAGBANK_TOKEN", "SEU_TOKEN_SANDBOX_AQUI")
 PAGBANK_ENV = os.getenv("PAGBANK_ENV", "sandbox")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://seu-site.com/webhook-pagbank")
-
-# Configuração MongoDB
-MONGODB_URI = os.getenv("MONGODB_URI")
 
 # URLs da API baseadas no ambiente
 if PAGBANK_ENV == "sandbox":
@@ -28,17 +23,31 @@ if PAGBANK_ENV == "sandbox":
 else:
     URL_API = "https://api.pagseguro.com/orders"
 
-# Conexão MongoDB
-try:
-    client = MongoClient(MONGODB_URI)
-    db = client['delmonte_pizzaria']
-    pedidos_collection = db['pedidos']
-    print("✅ Conectado ao MongoDB Atlas!")
-except Exception as e:
-    print(f"❌ Erro ao conectar MongoDB: {str(e)}")
-    client = None
-    db = None
-    pedidos_collection = None
+# Configuração MongoDB (opcional com fallback)
+MONGODB_URI = os.getenv("MONGODB_URI")
+client = None
+db = None
+pedidos_collection = None
+
+if MONGODB_URI:
+    try:
+        from pymongo import MongoClient
+        from bson import ObjectId
+        client = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
+        client.admin.command('ping')
+        db = client['delmonte_pizzaria']
+        pedidos_collection = db['pedidos']
+        print("✅ MongoDB conectado!")
+    except Exception as e:
+        print(f"⚠️ MongoDB indisponível: {str(e)}")
+        client = None
+        db = None
+        pedidos_collection = None
+else:
+    print("⚠️ MONGODB_URI não configurada")
+
+# Fallback para lista em memória se MongoDB não disponível
+pedidos_confirmados = []
 
 # Função auxiliar para converter ObjectId para string
 def serialize_pedido(pedido):
@@ -46,10 +55,63 @@ def serialize_pedido(pedido):
         pedido['_id'] = str(pedido['_id'])
     return pedido
 
+# Função para salvar pedido (MongoDB ou memória)
+def salvar_pedido(pedido):
+    if pedidos_collection:
+        try:
+            resultado = pedidos_collection.insert_one(pedido)
+            return resultado.inserted_id is not None
+        except Exception as e:
+            print(f"Erro ao salvar no MongoDB: {e}")
+            pedidos_confirmados.append(pedido)
+            return True
+    else:
+        pedidos_confirmados.append(pedido)
+        return True
+
+# Função para listar pedidos (MongoDB ou memória)
+def listar_pedidos():
+    if pedidos_collection:
+        try:
+            pedidos = list(pedidos_collection.find().sort("created_at", -1))
+            return [serialize_pedido(p) for p in pedidos]
+        except Exception as e:
+            print(f"Erro ao buscar no MongoDB: {e}")
+            return pedidos_confirmados
+    else:
+        return pedidos_confirmados
+
+# Função para atualizar status (MongoDB ou memória)
+def atualizar_status_pedido_db(order_id, novo_status):
+    if pedidos_collection:
+        try:
+            resultado = pedidos_collection.update_one(
+                {"id": order_id},
+                {"$set": {"status": novo_status, "updated_at": datetime.now().isoformat()}}
+            )
+            if resultado.matched_count > 0:
+                return pedidos_collection.find_one({"id": order_id})
+            return None
+        except Exception as e:
+            print(f"Erro ao atualizar no MongoDB: {e}")
+            # Fallback para memória
+            for pedido in pedidos_confirmados:
+                if pedido["id"] == order_id:
+                    pedido["status"] = novo_status
+                    pedido["updated_at"] = datetime.now().isoformat()
+                    return pedido
+            return None
+    else:
+        for pedido in pedidos_confirmados:
+            if pedido["id"] == order_id:
+                pedido["status"] = novo_status
+                pedido["updated_at"] = datetime.now().isoformat()
+                return pedido
+        return None
+
 # ROTAS PARA SERVIR ARQUIVOS HTML
 @app.route("/")
 def home_page():
-    """Serve a página inicial (index.html)"""
     try:
         return send_from_directory('.', 'index.html')
     except:
@@ -58,7 +120,7 @@ def home_page():
             "ambiente": PAGBANK_ENV,
             "endpoints": [
                 "GET / - Página inicial",
-                "GET /index.html - Página inicial",
+                "GET /index.html - Página inicial", 
                 "GET /pagamento.html - Página de pagamento",
                 "GET /pedidos.html - Gestão de pedidos",
                 "POST /criar-pedido - Criar pedido PIX",
@@ -70,30 +132,31 @@ def home_page():
 
 @app.route("/index.html")
 def index_page():
-    """Serve a página inicial"""
     return send_from_directory('.', 'index.html')
 
 @app.route("/pagamento.html")
 def pagamento_page():
-    """Serve a página de pagamento"""
     return send_from_directory('.', 'pagamento.html')
 
 @app.route("/pedidos.html")
 def pedidos_page():
-    """Serve a página de gestão de pedidos"""
     return send_from_directory('.', 'pedidos.html')
 
 # ROTAS DA API
 @app.route("/api", methods=["GET"])
 def api_info():
+    mongodb_status = "Conectado" if pedidos_collection else "Desconectado"
+    storage_type = "MongoDB" if pedidos_collection else "Memória RAM"
+    
     return jsonify({
         "status": "API PagBank DEL MONTE funcionando!",
         "ambiente": PAGBANK_ENV,
-        "mongodb_status": "Conectado" if pedidos_collection else "Desconectado",
+        "mongodb_status": mongodb_status,
+        "storage_type": storage_type,
         "endpoints": [
             "GET / - Página inicial",
             "GET /index.html - Página inicial",
-            "GET /pagamento.html - Página de pagamento",
+            "GET /pagamento.html - Página de pagamento", 
             "GET /pedidos.html - Gestão de pedidos",
             "POST /criar-pedido - Criar pedido PIX",
             "POST /criar-pedido-cartao - Criar pedido com cartão",
@@ -105,59 +168,35 @@ def api_info():
     })
 
 @app.route("/api/pedidos", methods=["GET"])
-def listar_pedidos():
-    """Lista todos os pedidos confirmados"""
+def api_listar_pedidos():
     try:
-        if not pedidos_collection:
-            return jsonify({"erro": "MongoDB não conectado"}), 500
-        
-        # Buscar todos os pedidos, ordenados por data de criação (mais recentes primeiro)
-        pedidos = list(pedidos_collection.find().sort("created_at", -1))
-        
-        # Converter ObjectId para string
-        pedidos_serializados = [serialize_pedido(pedido) for pedido in pedidos]
-        
+        pedidos = listar_pedidos()
         return jsonify({
             "sucesso": True,
-            "pedidos": pedidos_serializados
+            "pedidos": pedidos,
+            "total": len(pedidos),
+            "storage": "MongoDB" if pedidos_collection else "Memória"
         }), 200
     except Exception as e:
         return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
 
 @app.route("/api/pedidos/<order_id>/status", methods=["PUT"])
-def atualizar_status_pedido(order_id):
-    """Atualiza o status de um pedido"""
+def api_atualizar_status_pedido(order_id):
     try:
-        if not pedidos_collection:
-            return jsonify({"erro": "MongoDB não conectado"}), 500
-            
         dados = request.json
         novo_status = dados.get("status")
         
         if novo_status not in ["pending", "preparing", "completed", "delivered"]:
             return jsonify({"erro": "Status inválido"}), 400
         
-        # Atualizar pedido no MongoDB
-        resultado = pedidos_collection.update_one(
-            {"id": order_id},
-            {
-                "$set": {
-                    "status": novo_status,
-                    "updated_at": datetime.now().isoformat()
-                }
-            }
-        )
+        pedido = atualizar_status_pedido_db(order_id, novo_status)
         
-        if resultado.matched_count == 0:
+        if not pedido:
             return jsonify({"erro": "Pedido não encontrado"}), 404
-        
-        # Buscar pedido atualizado
-        pedido = pedidos_collection.find_one({"id": order_id})
-        pedido_serializado = serialize_pedido(pedido)
         
         return jsonify({
             "sucesso": True,
-            "pedido": pedido_serializado,
+            "pedido": serialize_pedido(pedido) if pedidos_collection else pedido,
             "mensagem": f"Status atualizado para {novo_status}"
         }), 200
         
@@ -166,48 +205,24 @@ def atualizar_status_pedido(order_id):
 
 @app.route("/api/pedidos/stats", methods=["GET"])
 def estatisticas_pedidos():
-    """Retorna estatísticas dos pedidos"""
     try:
-        if not pedidos_collection:
-            return jsonify({"erro": "MongoDB não conectado"}), 500
+        pedidos = listar_pedidos()
+        hoje = datetime.now().date().isoformat()
         
-        hoje = datetime.now().date()
-        hoje_str = hoje.isoformat()
+        # Filtros usando Python (funciona para MongoDB e memória)
+        pedidos_hoje = [p for p in pedidos if p.get("created_at", "").startswith(hoje)]
+        pendentes = [p for p in pedidos if p.get("status") == "pending"]
+        preparando = [p for p in pedidos if p.get("status") == "preparing"]
         
-        # Contadores usando agregação MongoDB
-        pipeline_hoje = [
-            {"$match": {"created_at": {"$regex": f"^{hoje_str}"}}},
-            {"$count": "total"}
-        ]
-        
-        pipeline_pendentes = [
-            {"$match": {"status": "pending"}},
-            {"$count": "total"}
-        ]
-        
-        pipeline_preparando = [
-            {"$match": {"status": "preparing"}},
-            {"$count": "total"}
-        ]
-        
-        pipeline_receita = [
-            {"$match": {"created_at": {"$regex": f"^{hoje_str}"}}},
-            {"$group": {"_id": None, "total": {"$sum": "$total"}}}
-        ]
-        
-        # Executar consultas
-        total_hoje = list(pedidos_collection.aggregate(pipeline_hoje))
-        pendentes = list(pedidos_collection.aggregate(pipeline_pendentes))
-        preparando = list(pedidos_collection.aggregate(pipeline_preparando))
-        receita = list(pedidos_collection.aggregate(pipeline_receita))
+        receita_hoje = sum(p.get("total", 0) for p in pedidos_hoje)
         
         return jsonify({
             "sucesso": True,
             "stats": {
-                "pedidos_hoje": total_hoje[0]["total"] if total_hoje else 0,
-                "pendentes": pendentes[0]["total"] if pendentes else 0,
-                "preparando": preparando[0]["total"] if preparando else 0,
-                "receita_hoje": receita[0]["total"] if receita else 0
+                "pedidos_hoje": len(pedidos_hoje),
+                "pendentes": len(pendentes),
+                "preparando": len(preparando),
+                "receita_hoje": receita_hoje
             }
         }), 200
         
@@ -215,13 +230,7 @@ def estatisticas_pedidos():
         return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
 
 def processar_pedido_confirmado(order_data, payment_method, payment_status):
-    """Salva um pedido confirmado no MongoDB"""
     try:
-        if not pedidos_collection:
-            print("❌ MongoDB não conectado - pedido não salvo")
-            return False
-        
-        # Criar objeto do pedido
         pedido = {
             "id": order_data.get("reference_id", f"DELMONTE_{int(datetime.now().timestamp())}"),
             "customer": {
@@ -243,14 +252,14 @@ def processar_pedido_confirmado(order_data, payment_method, payment_status):
             "updated_at": datetime.now().isoformat()
         }
         
-        # Salvar no MongoDB
-        resultado = pedidos_collection.insert_one(pedido)
+        sucesso = salvar_pedido(pedido)
+        storage = "MongoDB" if pedidos_collection else "memória"
         
-        if resultado.inserted_id:
-            print(f"✅ Pedido salvo no MongoDB: {pedido['id']}")
+        if sucesso:
+            print(f"✅ Pedido salvo em {storage}: {pedido['id']}")
             return True
         else:
-            print("❌ Erro ao salvar pedido no MongoDB")
+            print(f"❌ Erro ao salvar pedido em {storage}")
             return False
         
     except Exception as e:
@@ -259,38 +268,26 @@ def processar_pedido_confirmado(order_data, payment_method, payment_status):
 
 @app.route("/criar-pedido", methods=["POST"])
 def criar_pedido_pix():
-    """Cria pedido com pagamento PIX"""
     try:
         dados = request.json
 
-        # Validação básica
         if not dados or not dados.get("items"):
             return jsonify({"erro": "Dados do pedido inválidos"}), 400
 
-        # Calcula o total se não foi fornecido
         total_amount = dados.get("total_amount", 0)
         if total_amount == 0:
             for item in dados.get("items", []):
                 total_amount += item.get("unit_amount", 0) * item.get("quantity", 1)
 
-        # Define expiração do PIX para 30 minutos a partir de agora
         expiration_date = (datetime.now() + timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%S-03:00")
 
-        # Estrutura do pedido para PagBank
         pedido = {
             "reference_id": dados.get("reference_id", f"DELMONTE_{int(datetime.now().timestamp())}"),
             "customer": {
                 "name": dados.get("customer", {}).get("name", "Cliente DEL MONTE"),
                 "email": dados.get("customer", {}).get("email", "cliente@delmonte.com"),
                 "tax_id": dados.get("customer", {}).get("tax_id", "12345678901"),
-                "phones": [
-                    {
-                        "country": "55",
-                        "area": "21",
-                        "number": "999999999",
-                        "type": "MOBILE"
-                    }
-                ]
+                "phones": [{"country": "55", "area": "21", "number": "999999999", "type": "MOBILE"}]
             },
             "items": [
                 {
@@ -301,14 +298,7 @@ def criar_pedido_pix():
                 }
                 for i, item in enumerate(dados.get("items", []))
             ],
-            "qr_codes": [
-                {
-                    "amount": {
-                        "value": total_amount
-                    },
-                    "expiration_date": expiration_date
-                }
-            ],
+            "qr_codes": [{"amount": {"value": total_amount}, "expiration_date": expiration_date}],
             "notification_urls": [WEBHOOK_URL]
         }
 
@@ -318,16 +308,11 @@ def criar_pedido_pix():
             "Accept": "application/json"
         }
 
-        print(f"Enviando pedido para PagBank: {json.dumps(pedido, indent=2)}")
-
         response = requests.post(URL_API, json=pedido, headers=headers)
-
-        print(f"Resposta PagBank: {response.status_code} - {response.text}")
 
         if response.status_code in [200, 201]:
             response_data = response.json()
 
-            # Extrai informações do QR Code se disponível
             qr_code_info = {}
             if "qr_codes" in response_data and len(response_data["qr_codes"]) > 0:
                 qr_code = response_data["qr_codes"][0]
@@ -353,36 +338,28 @@ def criar_pedido_pix():
             }), response.status_code
 
     except Exception as e:
-        print(f"Erro interno: {str(e)}")
         return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
 
 @app.route("/criar-pedido-cartao", methods=["POST"])
 def criar_pedido_cartao():
-    """Cria pedido com pagamento por cartão de crédito"""
     try:
         dados = request.json
 
-        # Validação dos dados do cartão
         card_data = dados.get("card_data", {})
         if not all([card_data.get("number"), card_data.get("holder"),
                    card_data.get("exp_month"), card_data.get("exp_year"),
                    card_data.get("security_code")]):
             return jsonify({"erro": "Dados do cartão incompletos"}), 400
 
-        # Calcula o total
         total_amount = dados.get("total_amount", 0)
         if total_amount == 0:
             for item in dados.get("items", []):
                 total_amount += item.get("unit_amount", 0) * item.get("quantity", 1)
 
-        # Determina o tipo de cartão
         payment_type = dados.get("payment_type", "credit")
         installments = dados.get("installments", 1)
-
-        # Para crédito
         card_type = "CREDIT_CARD"
 
-        # Construir payment_method
         payment_method = {
             "type": card_type,
             "installments": installments,
@@ -392,9 +369,7 @@ def criar_pedido_cartao():
                 "exp_month": card_data["exp_month"],
                 "exp_year": card_data["exp_year"],
                 "security_code": card_data["security_code"],
-                "holder": {
-                    "name": card_data["holder"]
-                },
+                "holder": {"name": card_data["holder"]},
                 "store": False
             }
         }
@@ -405,14 +380,7 @@ def criar_pedido_cartao():
                 "name": dados.get("customer", {}).get("name", "Cliente DEL MONTE"),
                 "email": dados.get("customer", {}).get("email", "cliente@delmonte.com"),
                 "tax_id": dados.get("customer", {}).get("tax_id", "12345678901"),
-                "phones": [
-                    {
-                        "country": "55",
-                        "area": "21",
-                        "number": "999999999",
-                        "type": "MOBILE"
-                    }
-                ]
+                "phones": [{"country": "55", "area": "21", "number": "999999999", "type": "MOBILE"}]
             },
             "items": [
                 {
@@ -427,10 +395,7 @@ def criar_pedido_cartao():
                 {
                     "reference_id": f"charge_{payment_type}",
                     "description": f"Pedido Pizzaria DEL MONTE - {payment_type.upper()}",
-                    "amount": {
-                        "value": total_amount,
-                        "currency": "BRL"
-                    },
+                    "amount": {"value": total_amount, "currency": "BRL"},
                     "payment_method": payment_method
                 }
             ],
@@ -443,22 +408,16 @@ def criar_pedido_cartao():
             "Accept": "application/json"
         }
 
-        print(f"Enviando pedido de cartão para PagBank: {json.dumps(pedido, indent=2)}")
-
         response = requests.post(URL_API, json=pedido, headers=headers)
-
-        print(f"Resposta PagBank (Cartão): {response.status_code} - {response.text}")
 
         if response.status_code in [200, 201]:
             response_data = response.json()
 
-            # Verifica status do pagamento
             charge_status = "UNKNOWN"
             if "charges" in response_data and len(response_data["charges"]) > 0:
                 charge_status = response_data["charges"][0].get("status", "UNKNOWN")
 
             if charge_status == "PAID":
-                # Processar pedido confirmado
                 processar_pedido_confirmado(dados, payment_type.upper(), "PAID")
                 
                 return jsonify({
@@ -485,12 +444,10 @@ def criar_pedido_cartao():
             }), response.status_code
 
     except Exception as e:
-        print(f"Erro interno no pagamento com cartão: {str(e)}")
         return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
 
 @app.route("/status-pedido/<order_id>", methods=["GET"])
 def consultar_status(order_id):
-    """Consulta o status de um pedido"""
     try:
         headers = {
             "Authorization": f"Bearer {PAGBANK_TOKEN}",
@@ -503,19 +460,14 @@ def consultar_status(order_id):
         if response.status_code == 200:
             data = response.json()
 
-            # Determina o status baseado no tipo de pagamento
             status = "UNKNOWN"
             payment_method = "UNKNOWN"
 
             if data.get("charges"):
-                # Pagamento com cartão
                 charge = data["charges"][0]
                 status = charge.get("status", "UNKNOWN")
                 payment_method = charge.get("payment_method", {}).get("type", "CARD")
             elif data.get("qr_codes"):
-                # Pagamento PIX
-                qr_code = data["qr_codes"][0]
-                # Para PIX, verificamos se há charges criadas
                 if data.get("charges") and len(data["charges"]) > 0:
                     status = data["charges"][0].get("status", "WAITING")
                 else:
@@ -542,48 +494,33 @@ def consultar_status(order_id):
 
 @app.route("/webhook-pagbank", methods=["POST"])
 def webhook_pagbank():
-    """Recebe notificações do PagBank sobre mudanças no status do pagamento"""
     try:
         dados = request.json
-        print(f"Webhook recebido: {json.dumps(dados, indent=2)}")
 
-        # Extrai informações importantes
         if dados and dados.get("charges"):
             charge = dados["charges"][0]
             status = charge.get("status")
             reference_id = dados.get("reference_id")
             payment_method = charge.get("payment_method", {}).get("type", "UNKNOWN")
 
-            # Processar pagamento confirmado
             if status == "PAID":
-                print(f"✅ Pagamento confirmado para pedido {reference_id} via {payment_method}")
-                
-                # Buscar dados do pedido original (simplificado para PIX)
                 order_data = {
                     "reference_id": reference_id,
                     "customer": dados.get("customer", {}),
                     "items": dados.get("items", []),
                     "total_amount": sum(item.get("unit_amount", 0) * item.get("quantity", 0) 
                                       for item in dados.get("items", [])),
-                    "delivery_fee": 500  # R$ 5,00 padrão
+                    "delivery_fee": 500
                 }
                 
-                # Salvar pedido confirmado no MongoDB
                 processar_pedido_confirmado(order_data, payment_method, "PAID")
-                
-            elif status == "DECLINED":
-                print(f"❌ Pagamento recusado para pedido {reference_id} via {payment_method}")
-            elif status == "CANCELED":
-                print(f"⚠️ Pagamento cancelado para pedido {reference_id} via {payment_method}")
 
         return jsonify({"status": "webhook processado"}), 200
     except Exception as e:
-        print(f"Erro no webhook: {str(e)}")
         return jsonify({"erro": str(e)}), 500
 
 @app.route("/config", methods=["GET"])
 def get_config():
-    """Retorna configurações públicas para o frontend"""
     return jsonify({
         "ambiente": PAGBANK_ENV,
         "moeda": "BRL",
@@ -591,22 +528,18 @@ def get_config():
         "aceita_cartao": True,
         "aceita_pix": True,
         "max_parcelas": 6,
-        "mongodb_status": "Conectado" if pedidos_collection else "Desconectado"
+        "mongodb_status": "Conectado" if pedidos_collection else "Desconectado",
+        "storage_type": "MongoDB" if pedidos_collection else "Memória RAM"
     })
 
 if __name__ == "__main__":
-    # Verifica se o token foi configurado
     if PAGBANK_TOKEN == "SEU_TOKEN_SANDBOX_AQUI":
         print("⚠️  ATENÇÃO: Configure seu token do PagBank no arquivo .env!")
-        print("   Crie um arquivo .env e adicione: PAGBANK_TOKEN=seu_token_aqui")
     else:
         print(f"✅ Token PagBank configurado!")
         print(f"📍 Ambiente: {PAGBANK_ENV}")
     
-    if MONGODB_URI:
-        print(f"✅ MongoDB URI configurado!")
-    else:
-        print("⚠️  MongoDB URI não configurado!")
-    
+    storage_info = "MongoDB Atlas" if pedidos_collection else "Memória RAM (temporário)"
+    print(f"💾 Armazenamento: {storage_info}")
     print("🍕 API DEL MONTE rodando em http://localhost:5000")
     app.run(port=5000, debug=True)
